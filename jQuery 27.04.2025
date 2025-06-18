@@ -1,0 +1,22 @@
+// Задача №1: Приветствие
+let name = prompt("Ваше имя?");
+alert(`Привет, ${name}!`);
+// Задача №2: Определение возраста
+const currentYear = 2025;
+let birthYear = +prompt("Год вашего рождения?");
+let age = currentYear - birthYear;
+alert(`Вам примерно ${age} лет.`);
+// Задача №3: Расчёт периметра квадрата
+let sideLength = +prompt("Длина стороны квадрата?");
+let perimeter = 4 * sideLength;
+alert(`Периметр квадрата равен ${perimeter}.`);
+// Задача №4: Расчёт площади круга
+let radius = +prompt("Радиус окружности?");
+let area = Math.PI * radius ** 2;
+alert(`Площадь окружности равна примерно ${area.toFixed(2)}.`);
+// Задача №5: Расчёт скорости движения
+let distanceKm = +prompt("Расстояние между городами в километрах?");
+let timeHours = +prompt("За сколько часов хотите доехать?");
+let speedKmh = distanceKm / timeHours;
+alert(`Необходимо двигаться со скоростью примерно ${speedKmh.toFixed(2)} км/ч.`);
+```

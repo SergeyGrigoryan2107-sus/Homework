@@ -1,0 +1,34 @@
+// Создаем объект Car с методами
+class Car {
+    constructor(manufacturer, model, year, avgSpeed) {
+        this.manufacturer = manufacturer;
+        this.model = model;
+        this.year = year;
+        this.avgSpeed = avgSpeed;
+    }
+
+    // Метод для вывода информации об автомобиле
+    info() {
+        console.log(`Производитель: ${this.manufacturer}, Модель: ${this.model}, Год выпуска: ${this.year}, Средняя скорость: ${this.avgSpeed} км/ч`);
+    }
+
+    // Метод для подсчета времени пути с учетом остановок
+    travelTime(distance) {
+        // Необходимое время без учета остановок
+        const basicTravelTime = distance / this.avgSpeed;
+        
+        // Общее время отдыха (каждый 4-й час дорога прерывается на 1 час)
+        const restTime = Math.ceil(basicTravelTime / 4);
+        
+        // Итоговое время путешествия
+        const totalTime = basicTravelTime + restTime;
+        
+        console.log(`Необходимое время для преодоления расстояния ${distance} км составляет примерно ${totalTime.toFixed(2)} часов.`);
+    }
+}
+
+// Создание экземпляра автомобиля
+const myCar = new Car("Toyota", "Camry", 2020, 90);
+myCar.info();               // Вывод информации
+myCar.travelTime(500);     // Проверка расчетного времени пути
+```

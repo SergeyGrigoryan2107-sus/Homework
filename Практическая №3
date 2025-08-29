@@ -1,0 +1,62 @@
+### Задача №1: Статистика строки
+// Функция статистики строки
+function stringStats(str) {
+    let lettersCount = 0,
+        digitsCount = 0,
+        otherCharsCount = 0;
+    
+    for(let i = 0; i < str.length; i++) {
+        const charCode = str.charCodeAt(i);
+        
+        // Проверяем диапазон символов ASCII
+        if ((charCode >= 65 && charCode <= 90) || (charCode >= 97 && charCode <= 122)) {
+            lettersCount++;
+        } else if (charCode >= 48 && charCode <= 57) {
+            digitsCount++;
+        } else {
+            otherCharsCount++;
+        }
+    }
+    
+    console.log(`Букв: ${lettersCount}`);
+    console.log(`Цифр: ${digitsCount}`);
+    console.log(`Другие знаки: ${otherCharsCount}`);
+}
+
+stringStats("Hello123!");
+// Букв: 5
+// Цифр: 3
+// Другие знаки: 1
+```
+
+### Задача №2: Число словами
+
+
+```javascript
+// Словарь чисел от 0 до 99
+const unitsMap = ["ноль", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять"];
+const teensMap = ["десять", "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать", "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать"];
+const tensMap = ["", "", "двадцать", "тридцать", "сорок", "пятьдесят", "шестьдесят", "семьдесят", "восемьдесят", "девяносто"];
+
+// Преобразование числа в текст
+function numberToWords(num) {
+    if (num > 99 || num < 0) {
+        throw new Error("Число должно быть двухзначным");
+    }
+
+    if (num === 0) return unitsMap[num];
+
+    const onesDigit = num % 10;
+    const tensDigit = Math.floor(num / 10);
+
+    if (tensDigit === 1) {
+        return teensMap[onesDigit]; // Если число начинается с единицы (10-19)
+    } else {
+        return `${tensMap[tensDigit]} ${unitsMap[onesDigit]}`.trim();
+    }
+}
+
+console.log(numberToWords(35)); // "тридцать пять"
+console.log(numberToWords(10)); // "десять"
+console.log(numberToWords(21)); // "двадцать один"
+```

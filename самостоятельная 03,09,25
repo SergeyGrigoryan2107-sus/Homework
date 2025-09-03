@@ -1,0 +1,83 @@
+Регулярные выражения
+
+a) Ровно 4 цифры:
+
+^\d{4}$
+
+b) От 4 до 6 цифр:
+
+^\d{4,6}$
+
+c) От 4 до 6 символов (цифры или маленькие латинские буквы):
+
+^[a-z\d]{4,6}$
+
+d) Ровно 7 шестнадцатеричных цифр (включая большие и маленькие буквы):
+
+^[0-9A-Fa-f]{7}$
+
+^\d[\w]*$
+
+// Текущая дата плюс 15 минут
+let expires = new Date();
+expires.setTime(expires.getTime() + (15 * 60 * 1000));
+
+// Создаем cookie
+document.cookie = 'status=active; path=/; expires=' + expires.toUTCString();
+// Дата в прошлом
+let expiredDate = new Date('Thu, 01 Jan 1970 00:00:01 GMT');
+// Перезапись значения cookie с установленным сроком истечения в прошлое
+document.cookie = 'status=; path=/; expires=' + expiredDate.toUTCString();
+
+Скрипт:
+
+
+
+<script type="text/javascript">
+    function countCookies() {
+        let allCookies = document.cookie.split(";");
+        return allCookies.length;
+    }
+    
+    // Вывод результата в консоль браузера
+    console.log(`Количество cookies: ${countCookies()}`);
+</script>
+
+
+
+HTML-код расширенной формы авторизации:
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Форма авторизации</title>
+</head>
+<body>
+    <form id="authForm" method="post">
+        <!-- Имя пользователя -->
+        <label for="username">Имя пользователя:</label><br>
+        <input type="text" name="username" required pattern=".{4,}" title="Минимальная длина имени — 4 символа"><br>
+        
+        <!-- Пароль -->
+        <label for="password">Пароль:</label><br>
+        <input type="password" name="password" required minlength="8" maxlength="16" title="Длина пароля должна составлять от 8 до 16 символов"><br>
+        
+        <!-- Email -->
+        <label for="email">Email:</label><br>
+        <input type="email" name="email" required pattern="[^@]+@[^.]+\..+" title="Неверный формат email"><br>
+        
+        <!-- Номер телефона -->
+        <label for="phone">Телефон:</label><br>
+        <input type="tel" name="phone" required pattern="^(\+?\d[- .]?){7,}$" title="Формат номера некорректен"><br>
+        
+        <!-- Кнопка отправки -->
+        <button type="submit">Авторизация</button>
+    </form>
+</body>
+</html>
+
+
+

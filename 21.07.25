@@ -1,0 +1,39 @@
+# Задача 1: Сравнение двух чисел
+def compare_numbers(a, b):
+    if a < b:
+        return -1
+    elif a > b:
+        return 1
+    else:
+        return 0
+
+# Задача 2: Факториал числа
+def factorial(n):
+    result = 1
+    for i in range(1, n+1):
+        result *= i
+    return result
+
+# Задача 3: Число из трёх цифр
+def digits_to_number(digit1, digit2, digit3):
+    return digit1 * 100 + digit2 * 10 + digit3
+
+# Задача 4: Площадь прямоугольника или квадрата
+def rectangle_area(length, width=None):
+    if width is None:
+        width = length
+    return length * width
+
+# Задача 5: Проверка числа на совершенность
+def is_perfect_number(num):
+    divisors_sum = sum(i for i in range(1, num) if num % i == 0)
+    return divisors_sum == num
+
+# Задача 6: Нахождение совершенных чисел в диапазоне
+def find_perfect_numbers(min_val, max_val):
+    perfect_nums = []
+    for number in range(min_val, max_val + 1):
+        if is_perfect_number(number):
+            perfect_nums.append(number)
+    return perfect_nums
+

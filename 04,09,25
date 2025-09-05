@@ -1,0 +1,142 @@
+### Задание 1
+class Marker:
+    def __init__(self, color):
+        self.color = color      # Цвет маркера
+        self.ink_level = 100   # Количество чернил в процентах (начальное значение)
+    
+    def print(self, text):
+        printed_text = ""
+        
+        for char in text:
+            if not char.isspace() and self.ink_level > 0:
+                self.ink_level -= 0.5     # Один символ потребляет 0.5%
+                
+                # Если чернил недостаточно, прекращаем печать
+                if self.ink_level <= 0:
+                    break
+            
+            printed_text += char
+        
+        return f"{printed_text}\\nЧернил осталось {self.ink_level:.1f}%."
+class RefillableMarker(Marker):
+    def refill(self):
+        """Заправляем маркер"""
+        self.ink_level = 100
+        return "Маркер успешно заправлен!"
+# Создаем объект обычного маркера синего цвета
+blue_marker = Marker("Blue")
+print(blue_marker.print("Привет мир"))  # Печатаем строку
+
+# Создаем объект заправляющегося маркера красного цвета
+red_refillable_marker = RefillableMarker("Red")
+
+# Сначала используем его для печати текста
+print(red_refillable_marker.print("Это демонстрационный текст"))
+
+# Затем заправляем маркер
+print(red_refillable_marker.refill())
+
+# Проверяем снова
+print(red_refillable_marker.print("Теперь попробуем напечатать больше текста."))
+
+### Задание 2
+
+import datetime
+
+class ExtendedDate(datetime.date):
+    # Перевод чисел месяцев в строки
+    _months = ["января", "февраля", "марта", "апреля", "мая", "июня",
+               "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+
+    def format_date_text(self):
+        """
+        Возвращает дату в виде строки (день числа_месяца).
+        Например: 1 января, 2 февраля и т.п.
+        """
+        return f"{self.day} {self._months[self.month - 1]}"
+
+    def is_future_or_current(self):
+        """
+        Проверяет, является ли дата будущим событием или текущим днем.
+        Вернет True, если дата будущая или текущая, False — если прошлая.
+        """
+        current_date = datetime.date.today()
+        return self >= current_date
+
+    def is_leap_year(self):
+        """
+        Проверяет, является ли год високосным.
+        Возвращает True, если год високосный, False — если обычный.
+        """
+        return self.year % 4 == 0 and (self.year % 100 != 0 or self.year % 400 == 0)
+
+    def next_day(self):
+        """
+        Возвращает следующий день относительно текущей даты.
+        """
+        return self + datetime.timedelta(days=1)
+
+# Пример использования нового класса
+if __name__ == "__main__":
+    my_date = ExtendedDate(2024, 2, 29)  # Вводим произвольную дату
+
+    # Вычислим и покажем дату текстом
+    print(my_date.format_date_text())  # Вывод: 29 февраля
+
+    # Проверим, является ли дата прошедшей или будущей
+    print(my_date.is_future_or_current())  # Предположительно вернёт True или False
+
+    # Узнаем, является ли год високосным
+    print(my_date.is_leap_year())  # Должно вернуть True, поскольку 2024 — високосный год
+
+    # Найдем следующую дату
+    next_date = my_date.next_day()
+    print(next_date)  # Вывод: следующая дата (1 марта 2024)
+### Задание 3
+class Employee:
+    def __init__(self, first_name, last_name, position, salary):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.position = position
+        self.salary = salary
+
+    def __repr__(self):
+        return f"{self.first_name} {self.last_name}, {self.position}, Зарплата: {self.salary}"
+
+class EmpTable:
+    def __init__(self, employees):
+        self.employees = employees
+
+    def getHtml(self):
+        html_code = "<table border='1'>\\n"
+        html_code += "<tr><th>ФИО</th><th>Должность</th><th>Зарплата</th></tr>\\n"
+        
+        for emp in self.employees:
+            html_code += f"<tr><td>{emp.first_name} {emp.last_name}</td>"
+            html_code += f"<td>{emp.position}</td>"
+            html_code += f"<td>{emp.salary}</td></tr>\\n"
+        
+        html_code += "</table>"
+        return html_code
+
+# Список сотрудников банка
+employees_list = [
+    Employee('Иван', 'Иванов', 'Менеджер', 50000),
+    Employee('Анна', 'Петрова', 'Бухгалтер', 60000),
+    Employee('Сергей', 'Смирнов', 'Программист', 70000),
+    Employee('Елена', 'Васильева', 'Директор', 100000)
+]
+
+# Создаем объект класса EmpTable
+emp_table = EmpTable(employees_list)
+
+# Генерируем и выводим HTML-код
+html_output = emp_table.getHtml()
+print(html_output)
+<table border='1'>
+<tr><th>ФИО</th><th>Должность</th><th>Зарплата</th></tr>
+<tr><td>Иван Иванов</td><td>Менеджер</td><td>50000</td></tr>
+<tr><td>Анна Петрова</td><td>Бухгалтер</td><td>60000</td></tr>
+<tr><td>Сергей Смирнов</td><td>Программист</td><td>70000</td></tr>
+<tr><td>Елена Васильева</td><td>Директор</td><td>100000</td></tr>
+</table>

@@ -1,0 +1,166 @@
+###Задание 1  
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    lyrics = '"We are the champions, my friends\\nAnd we\\'ll keep on fighting till the end"'
+    artist = 'Queen'
+    song_title = 'We Are The Champions'
+    return render_template('index.html', lyrics=lyrics, artist=artist, song_title=song_title)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Favorite Song Lyric</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        h1 {
+            color: darkblue;
+        }
+        pre {
+            font-size: large;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ artist }}: "{{ song_title }}"</h1>
+    <pre>{{ lyrics|safe }}</pre>
+</body>
+</html>
+###Задание 2 
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def english_version():
+    return render_template('en.html')
+
+@app.route('/fr')
+def french_version():
+    return render_template('fr.html')
+
+@app.route('/de')
+def german_version():
+    return render_template('de.html')
+
+@app.route('/es')
+def spanish_version():
+    return render_template('es.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>English Version</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        h1 {
+            color: darkblue;
+        }
+        pre {
+            font-size: large;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Queen: "We Are The Champions"</h1>
+    <pre>We are the champions, my friends
+And we'll keep on fighting till the end</pre>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Version Française</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        h1 {
+            color: darkblue;
+        }
+        pre {
+            font-size: large;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Queen: "Les Champions"</h1>
+    <pre>Nous sommes les champions, mes amis
+Et nous continuerons à combattre jusqu'à la fin</pre>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Deutsche Version</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        h1 {
+            color: darkblue;
+        }
+        pre {
+            font-size: large;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Queen: "Die Meister"</h1>
+    <pre>Wir sind die Championen, meine Freunde
+Und wir werden weiterkämpfen bis zum Ende</pre>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Versión Española</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        h1 {
+            color: darkblue;
+        }
+        pre {
+            font-size: large;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Queen: "Los Campeones"</h1>
+    <pre>Somos los campeones, mis amigos
+Y seguiremos luchando hasta el final</pre>
+</body>
+</html>

@@ -1,0 +1,123 @@
+###Задание 1
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ввод имени пользователя</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .container {
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 0 10px rgba(0,0,0,.1);
+            background-color: white;
+            border-radius: 8px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Введите ваше имя:</h1>
+    <form id="myForm">
+        <label for="username">Имя:</label>
+        <input type="text" id="username" placeholder="Только буквы..." oninput="checkInput(this)" />
+    </form>
+</div>
+
+<script>
+// Функция фильтрации цифр при вводе
+function checkInput(inputElement) {
+    // Удаляем цифры из введенных значений
+    let filteredValue = inputElement.value.replace(/[0-9]/g, '');
+    inputElement.value = filteredValue;
+}
+</script>
+</body>
+</html>
+###Задание 2
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Модальное окно</title>
+    <style>
+        /* Скрытие модального окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* полупрозрачная подложка */
+        }
+
+        /* Контент внутри модального окна */
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* Кнопка закрытия */
+        .close-btn {
+            float: right;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Основная кнопка для открытия модального окна -->
+<button onclick="openModal()">Открыть</button>
+
+<!-- Модальное окно -->
+<div id="myModal" class="modal">
+    <!-- Содержимое модального окна -->
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <p>Это модальное окно!</p>
+        <button onclick="closeModal()">Закрыть</button>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById('myModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('myModal').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>

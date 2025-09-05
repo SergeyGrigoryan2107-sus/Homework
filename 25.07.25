@@ -1,0 +1,82 @@
+### Задание 1 
+<?php
+session_start();
+
+// Базовая защита от атак XSS
+function clean_input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
+
+// Проверка существования сессионных переменных
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $login = clean_input($_POST['login']);
+    $password = clean_input($_POST['password']);
+
+    // Определены пользователи и админы вручную
+    $users = array(
+        ['login' => 'admin', 'password' => 'adminpass', 'role' => 'Администратор'],
+        ['login' => 'user', 'password' => 'userpass', 'role' => 'Пользователь']
+    );
+
+    foreach ($users as $user) {
+        if ($user['login'] === $login && $user['password'] === $password) {
+            $_SESSION['logged_in'] = true;
+            echo '<h2>Добро пожаловать, '.$user['role'].'!</h2>';
+            exit(); // Завершаем выполнение после успешной аутентификации
+        }
+    }
+
+    // Если ни одна пара логин-пароль не подошла
+    echo '<h2>Ошибка: Неправильные логин или пароль.</h2>';
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Авторизация</title>
+</head>
+<body>
+<h1>Авторизация на сайте</h1>
+<form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
+    <label for="login">Логин:</label>
+    <input type="text" name="login" required /><br/>
+    <label for="password">Пароль:</label>
+    <input type="password" name="password" required /><br/><br/>
+    <input type="submit" value="Войти"/>
+</form>
+</body>
+</html>
+###Задание 2
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вычисления над тремя числами</title>
+</head>
+<body>
+    <h1>Операции над тремя числами</h1>
+    <form method="post" action="calculate.php">
+        <label for="num1">Первое число:</label>
+        <input type="number" name="num1" required><br>
+        <label for="num2">Второе число:</label>
+        <input type="number" name="num2" required><br>
+        <label for="num3">Третье число:</label>
+        <input type="number" name="num3" required><br>
+        <label>
+            <input type="radio" name="operation" value="min" checked>Минимум из трех
+        </label><br>
+        <label>
+            <input type="radio" name="operation" value="max">Максимум из трех
+        </label><br>
+        <label>
+            <input type="radio" name="operation" value="avg">Среднее арифметическое
+        </label><br>
+        <input type="submit" value="Рассчитать">
+    </form>
+</body>
+</html>

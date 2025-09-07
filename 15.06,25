@@ -1,0 +1,68 @@
+import tkinter as tk
+from random import shuffle
+
+class MemoryGame(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        
+        self.title("Найди пару!")
+        self.geometry("400x400")
+        
+        # Настройки игры
+        self.cards = ["A", "B", "C", "D", "E", "F"] * 2  # Убедимся, что каждая карта встречается дважды
+        shuffle(self.cards)                              # Перемешиваем колоду
+        
+        self.buttons = []
+        self.selected_cards = []                         # Выбранные игроком карты
+        self.found_pairs = set()                          # Набор найденных пар
+        
+        # Интерфейс
+        frame = tk.Frame(self)
+        frame.pack(pady=20)
+        
+        for row in range(4):
+            for col in range(3):
+                button = tk.Button(frame, text="", width=5, height=2, command=lambda r=row, c=col: self.on_click(r, c))
+                button.grid(row=row, column=col)
+                self.buttons.append(button)
+    
+    def on_click(self, row, col):
+        index = row * 3 + col   # Определяем индекс кнопки
+        card_value = self.cards[index]
+        
+        # Показываем карту игроку
+        self.buttons[index].config(text=card_value)
+        
+        # Сохраняем выбранную карту
+        self.selected_cards.append((index, card_value))
+        
+        # Если выбрано ровно две карты
+        if len(self.selected_cards) == 2:
+            first_card = self.selected_cards.pop(0)
+            second_card = self.selected_cards.pop(0)
+            
+            # Если совпадают значения двух открытых карт
+            if first_card[1] == second_card[1]:
+                self.found_pairs.add(first_card[0])
+                self.found_pairs.add(second_card[0])
+                
+                # Блокируем повторное нажатие кнопок с парами
+                self.buttons[first_card[0]].config(state="disabled")
+                self.buttons[second_card[0]].config(state="disabled")
+                
+                # Сообщение об успехе
+                message = f"Вы нашли пару '{first_card[1]}'. Продолжайте!"
+                tk.messagebox.showinfo("Пара найдена", message)
+            else:
+                # Скрываем обе карты снова
+                self.after(1000, lambda: (
+                    self.buttons[first_card[0]].config(text=''),
+                    self.buttons[second_card[0]].config(text='')
+                ))
+    
+    def run_game(self):
+        self.mainloop()
+
+if __name__ == "__main__":
+    game = MemoryGame()
+    game.run_game()

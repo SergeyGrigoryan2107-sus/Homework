@@ -1,0 +1,70 @@
+pip install flask
+
+
+from flask import Flask
+
+# Создаем экземпляр приложения Flask
+app = Flask(__name__)
+
+# Маршрутизация главной страницы '/'
+@app.route('/')
+def home():
+    return 'Главная страница'
+
+# Маршрутизация страницы писателей '/writers'
+@app.route('/writers')
+def writers():
+    return 'Раздел писатели'
+
+# Маршрутизация страницы топ-книг '/books'
+@app.route('/books')
+def books():
+
+python app.py
+###Задание 3
+from flask import Flask, redirect, url_for
+
+# Список наших книг (пример):
+TOP_BOOKS = {
+    1: {"title": "Война и мир", "author": "Лев Толстой"},
+    2: {"title": "Преступление и наказание", "author": "Фёдор Достоевский"},
+    3: {"title": "Мастер и Маргарита", "author": "Михаил Булгаков"}
+}
+
+# Создаем экземпляр приложения Flask
+app = Flask(__name__)
+
+# Маршрутизация главной страницы '/'
+@app.route('/')
+def home():
+    return 'Главная страница'
+
+# Маршрутизация страницы писателей '/writers'
+@app.route('/writers')
+def writers():
+    return 'Раздел писатели'
+
+# Маршрутизация списка всех книг
+@app.route('/books')
+def books_list():
+    return 'Список лучших книг'
+
+# Обработка конкретных номеров книг
+@app.route('/books/<int:id>')
+def book_detail(id):
+    if id in TOP_BOOKS:
+        book = TOP_BOOKS[id]
+        return f'Книга № {id}: "{book["title"]}" автора {book["author"]}'
+    else:
+        # Если книга не найдена, делаем редирект на общую страницу книг
+        return redirect(url_for('books_list'))
+
+if __name__ == '__main__':
+    # Запускаем приложение на локальном сервере
+    app.run(host='127.0.0.1', port=8000)
+
+    return 'Топ лучших книг'
+
+if __name__ == '__main__':
+    # Запускаем приложение на локальном сервере
+    app.run(host='127.0.0.1', port=8000)

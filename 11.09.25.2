@@ -1,0 +1,233 @@
+
+
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма регистрации</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
+    <style>
+        .error {
+            color: red;
+            margin-left: 10px;
+        }
+        .success {
+            color: green;
+        }
+        .hidden {
+            display: none;
+        }
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Регистрация пользователя</h1>
+
+<form id="registrationForm" data-parsley-validate>
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required 
+               data-parsley-minlength="4" 
+               data-parsley-maxlength="20"
+               data-parsley-username="true" 
+               data-parsley-trigger="focusout" />
+        <span class="error"></span>
+    </div>
+    
+    <div>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required 
+               data-parsley-trigger="focusout" />
+        <span class="error"></span>
+    </div>
+
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required 
+               data-parsley-minlength="6" 
+               data-parsley-maxlength="30"
+               data-parsley-trigger="focusout" />
+        <span class="error"></span>
+    </div>
+
+    <div>
+        <label for="repeat">Repeat Password:</label>
+        <input type="password" id="repeat" name="repeat" required 
+               data-parsley-equalto="#password" 
+               data-parsley-trigger="focusout" />
+        <span class="error"></span>
+    </div>
+
+    <button type="submit">Register</button>
+</form>
+
+<div id="userData" class="hidden">
+    <h2>Данные пользователя</h2>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>Поле</th>
+                <th>Значение</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    // Пользовательский валидатор для Username
+    window.Parsley.addValidator('username', {
+        validateString: function(value) {
+            const forbiddenUsernames = ['admin', 'user', 'test'];
+            return forbiddenUsernames.indexOf(value) === -1;
+        },
+        messages: {
+            en: 'Username “admin” or “user” or “test” is not allowed'
+        }
+    });
+
+    $(document).ready(function() {
+        $('#registrationForm').parsley().on('field:error', function() {
+            $(this.$element).next('.error').text(this.$element.getAttribute('data-parsley-errors'));
+        }).on('field:success', function() {
+            $(this.$element).next('.error').text('');
+        });
+
+        $('#registrationForm').on('submit', function(event) {
+            event.preventDefault();
+            if ($(this).parsley().isValid()) {
+                const username = $('#username').val();
+                const email = $('#email').val();
+                const password = $('#password').val();
+
+                // Отображение данных в таблице
+                $('#dataTable tbody').append(`
+                    <tr><td>Username</td><td>${username}</td></tr>
+                    <tr><td>Email</td><td>${email}</td></tr>
+                    <tr><td>Password</td><td>${password}</td></tr>
+                `);
+                
+                $('#userData').removeClass('hidden');
+                this.reset(); // Сброс формы
+            } else {
+                const firstErrorField = $(this).find('.parsley-error:first');
+                if (firstErrorField.length) {
+                    firstErrorField.focus(); // Фокус на первом невалидном поле
+                }
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
+```
+
+
+
+```html
+<h1>Дополнительная информация</h1>
+
+<form id="additionalInfoForm" data-parsley-validate>
+    <div>
+        <label for="fullName">Full Name:</label>
+        <input type="text" id="fullName" name="fullName" required 
+               data-parsley-minlength="2" 
+               data-parsley-maxlength="50"
+               data-parsley-pattern="^[A-Za-zА-Яа-яЁё\s-]+$"
+               data-parsley-trigger="focusout" />
+        <span class="error"></span>
+    </div>
+
+    <div>
+        <label for="avatar">Avatar:</label>
+        <input type="file" id="avatar" name="avatar" required />
+        <span class="error"></span>
+    </div>
+
+    <div>
+        <label for="birthday">Birthday:</label>
+        <input type="date" id="birthday" name="birthday" required 
+               data-parsley-dateiso 
+               data-parsley-maxdate="2000-01-01"
+               data-parsley-trigger="focusout"/>
+        <span class="error"></span>
+    </div>
+
+    <div>
+        <label>Gender:</label>
+        <select id="gender" name="gender" required data-parsley-trigger="focusout">
+            <option value="">Выберите пол</option>
+            <option value="male">Мужской</option>
+            <option value="female">Женский</option>
+            <option value="other">Другой</option>
+        </select>
+        <span class="error"></span>
+    </div>
+
+    <button type="submit">Save</button>
+</form>
+
+<div id="additionalData" class="hidden">
+    <h2>Дополнительные данные</h2>
+    <table id="additionalDataTable">
+        <thead>
+            <tr>
+                <th>Поле</th>
+                <th>Значение</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+// Дополнительная обработка формы
+$(document).ready(function() {
+    $('#additionalInfoForm').parsley().on('field:error', function() {
+        $(this.$element).next('.error').text(this.$element.getAttribute('data-parsley-errors'));
+    }).on('field:success', function() {
+        $(this.$element).next('.error').text('');
+    });
+
+    $('#additionalInfoForm').on('submit', function(event) {
+        event.preventDefault();
+        if ($(this).parsley().isValid()) {
+            const fullName = $('#fullName').val();
+            const birthday = $('#birthday').val();
+            const gender = $('#gender').val();
+
+            // Отображение дополнительных данных в таблице
+            $('#additionalDataTable tbody').append(`
+                <tr><td>Full Name</td><td>${fullName}</td></tr>
+                <tr><td>Birthday</td><td>${birthday}</td></tr>
+                <tr><td>Gender</td><td>${gender}</td></tr>
+            `);
+            
+            $('#additionalData').removeClass('hidden');
+            this.reset(); // Сброс формы
+        } else {
+            const firstErrorField = $(this).find('.parsley-error:first');
+            if (firstErrorField.length) {
+                firstErrorField.focus(); // Фокус на первом невалидном поле
+            }
+        }
+    });
+});
+</script>
+
+```

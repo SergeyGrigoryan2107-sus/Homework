@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор случайных строк</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Генератор случайных строк</h1>
+
+<form id="randomStringForm">
+    <div>
+        <label for="length">Длина строки:</label>
+        <input type="number" id="length" name="length" min="1" required>
+    </div>
+
+    <div>
+        <label>Символы:</label><br>
+        <input type="checkbox" id="numbers" name="characters" value="numbers" checked>
+        <label for="numbers">Цифры (0-9)</label><br>
+        <input type="checkbox" id="uppercase" name="characters" value="uppercase">
+        <label for="uppercase">Латинские буквы в верхнем регистре (A-Z)</label><br>
+        <input type="checkbox" id="lowercase" name="characters" value="lowercase">
+        <label for="lowercase">Латинские буквы в нижнем регистре (a-z)</label><br>
+    </div>
+
+    <button type="submit">Generate</button>
+</form>
+
+<div class="result" id="result"></div>
+
+<script>
+    document.getElementById('randomStringForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const length = parseInt(document.getElementById('length').value);
+        const includeNumbers = document.getElementById('numbers').checked;
+        const includeUppercase = document.getElementById('uppercase').checked;
+        const includeLowercase = document.getElementById('lowercase').checked;
+
+        const numbers = '0123456789';
+        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+
+        let characters = '';
+        if (includeNumbers) characters += numbers;
+        if (includeUppercase) characters += uppercase;
+        if (includeLowercase) characters += lowercase;
+
+        if (characters.length === 0) {
+            document.getElementById('result').textContent = 'Пожалуйста, выберите хотя бы один набор символов.';
+            return;
+        }
+
+        let randomString = '';
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            randomString += characters[randomIndex];
+        }
+
+        document.getElementById('result').textContent = Сгенерированная строка: ${randomString};
+    });
+</script>
+
+</body>
+</html>

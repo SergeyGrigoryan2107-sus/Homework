@@ -1,0 +1,168 @@
+#Задание 1: Класс для набора целых чисел
+
+import unittest
+
+class IntegerSet:
+    def __init__(self):
+        self.numbers = []
+    
+    # Добавление элемента в набор
+    def add(self, number):
+        if isinstance(number, int):
+            self.numbers.append(number)
+        else:
+            raise ValueError("Only integers are allowed")
+    
+    # Удаление элемента из набора
+    def remove(self, number):
+        try:
+            self.numbers.remove(number)
+        except ValueError:
+            pass
+    
+    # Подсчет суммы всех элементов
+    def sum_elements(self):
+        return sum(self.numbers)
+    
+    # Вычисление среднего арифметического
+    def average(self):
+        if len(self.numbers) > 0:
+            return sum(self.numbers) / len(self.numbers)
+        else:
+            return None
+    
+    # Поиск максимального элемента
+    def max_element(self):
+        if len(self.numbers) > 0:
+            return max(self.numbers)
+        else:
+            return None
+    
+    # Поиск минимального элемента
+    def min_element(self):
+        if len(self.numbers) > 0:
+            return min(self.numbers)
+        else:
+            return None
+
+
+# Тестирование класса IntegerSet
+class TestIntegerSet(unittest.TestCase):
+    def setUp(self):
+        self.set_obj = IntegerSet()
+        for i in range(1, 6):
+            self.set_obj.add(i)
+    
+    def test_sum_elements(self):
+        result = self.set_obj.sum_elements()
+        expected_result = 15
+        self.assertEqual(result, expected_result)
+    
+    def test_average(self):
+        result = self.set_obj.average()
+        expected_result = 3.0
+        self.assertAlmostEqual(result, expected_result)
+    
+    def test_max_element(self):
+        result = self.set_obj.max_element()
+        expected_result = 5
+        self.assertEqual(result, expected_result)
+    
+    def test_min_element(self):
+        result = self.set_obj.min_element()
+        expected_result = 1
+        self.assertEqual(result, expected_result)
+    
+    def test_remove_element(self):
+        initial_len = len(self.set_obj.numbers)
+        self.set_obj.remove(3)
+        new_len = len(self.set_obj.numbers)
+        self.assertLess(new_len, initial_len)
+    
+    def test_add_non_integer(self):
+        with self.assertRaises(ValueError):
+            self.set_obj.add('a')
+
+
+if __name__ == '__main__':
+    unittest.main(argv=[''], verbosity=2, exit=False)
+
+
+#Задание 2: Класс для представления целого числа
+
+import unittest
+
+
+class NumberConverter:
+    def __init__(self, value):
+        if not isinstance(value, int):
+            raise TypeError("Value must be an integer.")
+        self.value = value
+    
+    # Чтение текущего значения
+    def read_value(self):
+        return self.value
+    
+    # Установка нового значения
+    def write_value(self, new_value):
+        if isinstance(new_value, int):
+            self.value = new_value
+        else:
+            raise TypeError("New value must be an integer.")
+    
+    # Преобразование в восьмеричное представление
+    def to_octal(self):
+        return oct(self.value)[2:]
+    
+    # Преобразование в шестнадцатеричное представление
+    def to_hexadecimal(self):
+        return hex(self.value)[2:]
+    
+    # Преобразование в двоичное представление
+    def to_binary(self):
+        return bin(self.value)[2:]
+
+
+# Тестирование класса NumberConverter
+class TestNumberConverter(unittest.TestCase):
+    def setUp(self):
+        self.converter = NumberConverter(255)
+    
+    def test_read_value(self):
+        result = self.converter.read_value()
+        expected_result = 255
+        self.assertEqual(result, expected_result)
+    
+    def test_write_value(self):
+        self.converter.write_value(1024)
+        result = self.converter.read_value()
+        expected_result = 1024
+        self.assertEqual(result, expected_result)
+    
+    def test_to_octal(self):
+        result = self.converter.to_octal()
+        expected_result = '377'
+        self.assertEqual(result, expected_result)
+    
+    def test_to_hexadecimal(self):
+        result = self.converter.to_hexadecimal()
+        expected_result = 'ff'
+        self.assertEqual(result, expected_result)
+    
+    def test_to_binary(self):
+        result = self.converter.to_binary()
+        expected_result = '11111111'
+        self.assertEqual(result, expected_result)
+    
+    def test_write_non_integer(self):
+        with self.assertRaises(TypeError):
+            self.converter.write_value('abc')
+
+
+if __name__ == '__main__':
+    unittest.main(argv=[''], verbosity=2, exit=False)
+
+
+
+
+Обязательно запускайте тесты с аргументом verbosity=2, чтобы видеть подробный вывод результатов.

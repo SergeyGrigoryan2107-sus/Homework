@@ -1,0 +1,126 @@
+/cats_and_plants
+│
+├── app.py                   # Главный файл приложения
+├── models.py                # Модели
+├── controllers.py           # Контроллеры
+├── views.py                 # Представления
+└── templates/
+    ├── cat_list.html       
+    ├── cat_detail.html      
+    ├── plant_list.html      
+    └── plant_detail.html     
+*app file
+from flask import Flask, render_template
+from controllers import CatController, PlantController
+
+app = Flask(__name__)
+
+@app.route('/cats')
+def cats():
+    return CatController.list()
+
+@app.route('/cats/<int:cat_id>')
+def cat_detail(cat_id):
+    return CatController.detail(cat_id)
+
+@app.route('/plants')
+def plants():
+    return PlantController.list()
+
+@app.route('/plants/<int:plant_id>')
+def plant_detail(plant_id):
+    return PlantController.detail(plant_id)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+*models py
+class Cat:
+    cats = [
+        {"id": 1, "name": "Мурка", "breed": "Сиамская", "age": 3, "description": "Очень игривая", "image_url": "url_to_image"},
+        {"id": 2, "name": "Барсик", "breed": "Британская", "age": 5, "description": "Ленивая, но милая", "image_url": "url_to_image"},
+        # Добавьте больше кошек здесь
+    ]
+
+    @classmethod
+    def get_all_cats(cls):
+        return cls.cats
+
+    @classmethod
+    def get_cat_by_id(cls, cat_id):
+        return next((cat for cat in cls.cats if cat["id"] == cat_id), None)
+
+
+class Plant:
+    plants = [
+ {"id": 1, "name": "Кактус", "type": "Суккулент", "care_instructions": "Поливать раз в месяц", "image_url": "url_to_image"},
+        {"id": 2, "name": "Роза", "type": "Цветок", "care_instructions": "Поливать раз в неделю", "image_url": "url_to_image"},
+        # Добавьте больше растений здесь
+    ]
+
+    @classmethod
+    def get_all_plants(cls):
+        return cls.plants
+
+    @classmethod
+    def get_plant_by_id(cls, plant_id):
+        return next((plant for plant in cls.plants if plant["id"] == plant_id), None)
+
+*controllers py
+from flask import render_template
+from models import Cat, Plant
+
+class CatController:
+    
+    @staticmethod
+    def list():
+        cats = Cat.get_all_cats()
+        print("Лог: Получен список всех кошек.")
+        return render_template('cat_list.html', cats=cats)
+
+    @staticmethod
+    def detail(cat_id):
+        cat = Cat.get_cat_by_id(cat_id)
+        if cat:
+            print(f"Лог: Получена информация о кошке с ID {cat_id}.")
+            return render_template('cat_detail.html', cat=cat)
+        else:
+            print(f"Лог: Кошка с ID {cat_id} не найдена.")
+            return "Кошка не найдена", 404
+
+
+class PlantController:
+
+    @staticmethod
+    def list():
+        plants = Plant.get_all_plants()
+        print("Лог: Получен список всех растений.")
+        return render_template('plant_list.html', plants=plants)
+
+    @staticmethod
+    def detail(plant_id):
+        plant = Plant.get_plant_by_id(plant_id)
+        if plant:
+            print(f"Лог: Получена информация о растении с ID {plant_id}.")
+            return render_template('plant_detail.html', plant=plant)
+        else:
+            print(f"Лог: Растение с ID {plant_id} не найдено.")
+            return "Растение не найдено", 404
+*пример представления templates
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список кошек</title>
+</head>
+<body>
+<h1>Список кошек</h1>
+<ul>
+{% for cat in cats %}
+    <li>
+        <a href="/cats/{{ cat.id }}">{{ cat.name }}</a> ({{ cat.breed }})
+        <img src="{{ cat.image_url }}" alt="{{ cat.name }}">
+    </li>
+{% endfor %}
+</ul>
+</body>
+</html>

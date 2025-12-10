@@ -1,0 +1,34 @@
+from PIL import Image, ImageDraw, ImageFont
+import matplotlib.pyplot as plt
+
+# Создаем пустое изображение
+width, height = 400, 400
+image = Image.new('RGB', (width, height), (255, 255, 255))
+
+# Создаем объект для рисования
+draw = ImageDraw.Draw(image)
+
+# Рисуем круг (пиццу)
+draw.ellipse((50, 50, 350, 350), fill=(255, 220, 185), outline=(139, 69, 19), width=5)
+
+# Добавляем "ингредиенты" на пиццу
+toppings = [
+    ((100, 100), (255, 0, 0)),   # Помидоры
+    ((150, 150), (0, 255, 0)),   # Перец
+    ((200, 200), (255, 255, 0)), # Ананасы
+]
+
+for (x, y), color in toppings:
+    draw.ellipse((x-15, y-15, x+15, y+15), fill=color)
+
+# Добавляем текст
+font = ImageFont.load_default()
+draw.text((150, 370), "Ваша любимая пицца!", fill=(0, 0, 0), font=font)
+
+# Сохраняем изображение
+image.save('pizza_image.png')
+
+# Отображаем изображение
+plt.imshow(image)
+plt.axis('off')  # Убираем оси
+plt.show()

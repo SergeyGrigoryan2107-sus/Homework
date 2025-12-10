@@ -1,0 +1,152 @@
+По вашему запросу, давайте рассмотрим процесс реализации параметризированных тестов и создания отчетов для функций count_vowels, filter_strings_by_length и is_palindrome. Я подробно расскажу, как реализовать тесты, создадим примерный код и объясню структуру итогового архива с результатами.
+
+Шаг 1: Реализация функций
+
+Предположим, что ваши функции выглядят следующим образом:
+
+Функции (main.py)
+
+def count_vowels(s):
+    vowels = 'aeiouAEIOU'
+    return sum(1 for char in s if char in vowels)
+
+def filter_strings_by_length(strings, min_len):
+    return [s for s in strings if len(s) >= min_len]
+
+def is_palindrome(s):
+    cleaned = ''.join(char.lower() for char in s if char.isalnum())
+    return cleaned == cleaned[::-1]
+
+Шаг 2: Генерация тестовых данных
+
+Вы упомянули наличие файлов с тестовыми данными, которые создаются автоматически. Предположим, что структура ваших тестовых файлов выглядит так:
+
+Для каждого теста имеется два файла:_input.txt: входные данные
+_output.txt: ожидаемые результаты
+
+Эти файлы созданы вашими скриптами (например, 1.py, 2.py, 3.py), генерируя разнообразные тестовые сценарии.
+
+Пример содержимого файлов:
+
+Тестовые данные для count_vowels
+
+_input.txt:
+
+hello
+world
+test
+
+_output.txt:
+
+2
+1
+1
+
+Тестовые данные для filter_strings_by_length
+
+_input.txt:
+
+apple banana cherry orange pear grapefruit lemon lime kiwi mango strawberry watermelon blueberry raspberry blackberry apricot plum peach nectarine fig pomegranate avocado coconut guava passionfruit persimmon quince rhubarb starfruit tamarind ugli fruit vanilla yam zucchini
+5
+
+_output.txt:
+
+['banana', 'cherry', 'orange', 'grapefruit', 'lemon', 'strawberry', 'watermelon', 'blueberry', 'raspberry', 'blackberry', 'apricot', 'pomegranate', 'avocado', 'passionfruit', 'persimmon', 'quince', 'starfruit', 'tamarind']
+
+Тестовые данные для is_palindrome
+
+_input.txt:
+
+racecar
+hello
+A man a plan a canal Panama
+Madam Im Adam
+Was it a car or a cat I saw
+No lemon no melon
+
+_output.txt:
+
+True
+False
+True
+True
+True
+True
+
+Шаг 3: Написание параметризированных тестов
+
+Используем библиотеку pytest для написания параметризованных тестов.
+
+Файл с тестами (tests.py)
+
+import pytest
+from main import *
+
+@pytest.mark.parametrize("input_data, expected_output",
+                         [(line.strip(), int(result)) for line, result in zip(open('1_input.txt'), open('1_output.txt'))])
+def test_count_vowels(input_data, expected_output):
+    assert count_vowels(input_data) == expected_output
+
+@pytest.mark.parametrize("strings, min_len, expected_output",
+                         [(eval(line.split()[0]), int(line.split()[1]), eval(result))
+                          for line, result in zip(open('2_input.txt').readlines(), open('2_output.txt').readlines())])
+def test_filter_strings_by_length(strings, min_len, expected_output):
+    assert filter_strings_by_length(strings, min_len) == expected_output
+
+@pytest.mark.parametrize("string, expected_output",
+                         [(line.strip(), bool(eval(result))) for line, result in zip(open('3_input.txt'), open('3_output.txt'))])
+def test_is_palindrome(string, expected_output):
+    assert is_palindrome(string) == expected_output
+
+Шаг 4: Создание отчетов
+
+Запускаем тесты командой:
+
+pytest tests.py --html=report.html
+
+Эта команда создаст HTML-отчет, который удобно просматривать и анализировать.
+
+Итоговая структура архива
+
+Вот содержимое вашего архива:
+
+project/
+|- main.py
+|- tests.py
+|- report.html
+|- 1_input.txt
+|- 1_output.txt
+|- 2_input.txt
+|- 2_output.txt
+|- 3_input.txt
+|- 3_output.txt
+|- README.md
+
+Где:
+
+main.py: исходные функции
+tests.py: тесты с использованием pytest
+*.txt: тестовые данные
+report.html: отчет по результатам тестирования
+README.md: инструкция по запуску тестов и просмотру результатов
+
+Теперь поясним подробнее каждый пункт:
+
+Сам код тестов (tests.py)
+
+Здесь реализованы тесты с использованием pytest и параметризованные наборы данных, считываемые из соответствующих файлов.
+
+Отчеты
+
+Мы создаем отчеты с помощью опции --html=report.html, что позволяет быстро увидеть успешность прохождения тестов и детальные ошибки в одном месте.
+
+Файлы тестовых данных
+
+Файлы содержат заранее подготовленные данные, созданные вашими генераторами. Эти файлы используются в тестах для проверки корректности работы функций.
+
+Итоговый архив
+
+Ваш итоговый архив включает сам код тестов, исходные функции, тестовые данные и готовый отчет по выполнению тестов.
+
+
+Это полный процесс реализации параметризированных тестов и подготовки отчетов для заданных вами функций. Вы можете повторить шаги самостоятельно, используя приведенный шаблон, и получить аналогичный результат.

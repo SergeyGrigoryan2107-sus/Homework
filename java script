@@ -1,0 +1,90 @@
+// 4. Полезные вызовы для каждой страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const path = window.location.pathname;
+    
+    // Auth страница
+    if (path.includes('auth') || path.includes('login')) {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showFlash('Попытка входа...', 'info');
+                // Здесь должна быть реальная отправка формы
+                setTimeout(() => form.submit(), 1000);
+            });
+        }
+    }
+    
+    // Catalog страница
+    if (path.includes('catalog')) {
+        const bookElements = document.querySelectorAll('.book, [data-book]');
+        bookElements.forEach(book => {
+            book.addEventListener('click', function() {
+                showFlash('Открываем книгу...', 'info');
+            });
+        });
+    }
+    
+    // Reader страница
+    if (path.includes('reader')) {
+        const bookmarkBtn = document.querySelector('.add-bookmark, [data-action="bookmark"]');
+        if (bookmarkBtn) {
+            bookmarkBtn.addEventListener('click', function() {
+                showFlash('Закладка добавлена!', 'success');
+            });
+        }
+    }
+    
+    // Payment страница
+    if (path.includes('payment')) {
+        const paymentForm = document.querySelector('form');
+        if (paymentForm) {
+            paymentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showFlash('Оплата отправлена...', 'info');
+                // Здесь должна быть реальная отправка формы
+                setTimeout(() => paymentForm.submit(), 1000);
+            });
+        }
+    }
+    
+    // Admin страница
+    if (path.includes('admin')) {
+        const moderationButtons = document.querySelectorAll('.moderate-btn, [data-action="moderate"]');
+        moderationButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                showFlash('Решение применено!', 'success');
+            });
+        });
+    }
+});
+
+// 5. Имитация получения сообщений от сервера
+// В реальном приложении здесь должен быть WebSocket или Server-Sent Events
+function simulateServerMessages() {
+    // Имитация случайных сообщений от сервера
+    const serverMessages = [
+        { text: 'Новая книга добавлена', type: 'success' },
+        { text: 'Оплата подтверждена', type: 'success' },
+        { text: 'У вас новое сообщение', type: 'info' },
+        { text: 'Система обновлена', type: 'info' }
+    ];
+    
+    // Показываем случайное сообщение каждые 30 секунд
+    setInterval(() => {
+        const randomMsg = serverMessages[Math.floor(Math.random() * serverMessages.length)];
+        showFlash(randomMsg.text, randomMsg.type);
+    }, 30000);
+}
+
+// Запускаем имитацию (в реальном приложении это должно быть закомментировано)
+simulateServerMessages();
+
+// Альтернативно: функция для обработки реальных серверных сообщений
+function handleServerMessage(message, type = 'info') {
+    showFlash(message, type);
+}
+
+// Пример использования (для тестирования):
+// handleServerMessage('Новая книга добавлена', 'success');
+// handleServerMessage('Оплата подтверждена', 'success');

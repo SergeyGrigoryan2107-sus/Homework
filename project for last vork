@@ -1,0 +1,741 @@
+from flask import Flask, request, jsonify
+from flask_jwt_extended import (
+    JWTManager, create_access_token, create_refresh_token,
+    jwt_required, get_jwt_identity, get_jwt
+)
+from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
+from datetime import datetime, timedelta
+
+app = Flask(name)
+app.config['JWT_SECRET_KEY'] = 'super-secret-key'
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
+jwt = JWTManager(app)
+
+# Mock database
+users_db = {}
+blacklisted_tokens = set()
+
+class User:
+    def init(self, email, password, name):
+        self.id = str(uuid.uuid4())
+        self.email = email
+        self.password_hash = generate_password_hash(password)
+        self.name = name
+        self.role = "CUSTOMER"
+        self.created_at = datetime.utcnow()
+        self.is_active = True
+
+@app.route('/api/v1/auth/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'error': 'Missing email or password'}), 400
+    
+    if data['email'] in users_db:
+        return jsonify({'error': 'User already exists'}), 409
+    
+    user = User(
+        email=data['email'],
+        password=data['password'],
+        name=data.get('name', '')
+    )
+    
+    users_db[user.email] = user
+    
+    return jsonify({
+        'id': user.id,
+        'email': user.email,
+        'name': user.name,
+        'role': user.role,
+        'createdAt': user.created_at.isoformat()
+    }), 201
+
+@app.route('/api/v1/auth/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'error': 'Missing email or password'}), 400
+    
+    user = users_db.get(email)
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({'error': 'Invalid credentials'}), 401
+    
+    if not user.is_active:
+        return jsonify({'error': 'Account disabled'}), 403
+    
+    access_token = create_access_token(
+        identity=user.id,
+        additional_claims={'email': user.email, 'role': user.role}
+    )
+    refresh_token = create_refresh_token(identity=user.id)
+    
+    return jsonify({
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'token_type': 'Bearer',
+        'expires_in': 3600
+    }), 200
+
+@app.route('/api/v1/auth/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    current_user = get_jwt_identity()
+    user = next((u for u in users_db.values() if u.id == current_user), None)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    access_token = create_access_token(
+        identity=user.id,
+        additional_claims={'email': user.email, 'role': user.role}
+    )
+    
+    return jsonify({
+        'access_token': access_token,
+        'token_type': 'Bearer',
+        'expires_in': 3600
+    }), 200
+
+@app.route('/api/v1/auth/validate', methods=['POST'])
+def validate_token():
+    """Внутренний эндпоинт для валидации токена"""
+    # Этот эндпоинт вызывается другими сервисами через внутреннюю сеть
+    api_key = request.headers.get('X-API-Key')
+    if api_key != 'internal-api-key':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    token = data.get('token')
+    
+    # Здесь должна быть логика валидации токена
+    # Для упрощения возвращаем моковые данные
+    return jsonify({
+        'user_id': '123e4567-e89b-12d3-a456-426614174000',
+        'role': 'CUSTOMER',
+        'is_valid': True
+    }), 200
+
+if name == 'main':
+    app.run(port=5001, debug=True)
+
+from flask import Flask, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+import uuid
+from datetime import datetime
+
+app = Flask(name)
+
+# Mock database
+users = {
+    '123e4567-e89b-12d3-a456-426614174000': {
+        'id': '123e4567-e89b-12d3-a456-426614174000',
+        'email': 'user@example.com',
+        'name': 'John Doe',
+        'role': 'CUSTOMER',
+        'avatarUrl': 'https://example.com/avatar.jpg',
+        'createdAt': '2024-01-15T10:30:00Z'
+    }
+}
+
+@app.route('/api/v1/users/me', methods=['GET'])
+@jwt_required()
+def get_current_user():
+    current_user_id = get_jwt_identity()
+    claims = get_jwt()
+    
+    user = users.get(current_user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify(user), 200
+
+@app.route('/api/v1/users/me', methods=['PUT'])
+@jwt_required()
+def update_current_user():
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    
+    if current_user_id not in users:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Обновляем только разрешенные поля
+    if 'name' in data:
+        users[current_user_id]['name'] = data['name']
+    if 'avatarUrl' in data:
+        users[current_user_id]['avatarUrl'] = data['avatarUrl']
+    
+    return jsonify(users[current_user_id]), 200
+
+@app.route('/api/v1/users/<user_id>', methods=['GET'])
+def get_user_public(user_id):
+    user = users.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Возвращаем только публичную информацию
+    public_info = {
+        'id': user['id'],
+        'name': user['name'],
+        'avatarUrl': user['avatarUrl'],
+        'publicMetrics': {
+            'memberSince': user['createdAt'][:4],  # Год регистрации
+            'rating': 4.5
+        }
+    }
+    
+    return jsonify(public_info), 200
+
+@app.route('/api/v1/admin/users', methods=['GET'])
+@jwt_required()
+def get_all_users():
+    claims = get_jwt()
+    if claims.get('role') != 'ADMIN':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 20))
+    role_filter = request.args.get('role')
+    
+    filtered_users = list(users.values())
+    if role_filter:
+        filtered_users = [u for u in filtered_users if u['role'] == role_filter]
+    
+    # Пагинация
+    start = (page - 1) * limit
+    end = start + limit
+    paginated_users = filtered_users[start:end]
+    
+    return jsonify({
+        'items': paginated_users,
+        'total': len(filtered_users),
+        'page': page,
+        'limit': limit
+    }), 200
+
+if name == 'main':
+    app.run(port=5002, debug=True)
+
+from flask import Flask, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt
+import uuid
+from datetime import datetime
+
+app = Flask(name)
+
+# Mock database
+products_db = {}
+categories_db = {
+    '1': {'id': '1', 'name': 'Electronics', 'parentId': None},
+    '2': {'id': '2', 'name': 'Books', 'parentId': None},
+    '3': {'id': '3', 'name': 'Smartphones', 'parentId': '1'},
+}
+
+def init_mock_products():
+    for i in range(1, 51):
+        product_id = str(uuid.uuid4())
+        products_db[product_id] = {
+            'id': product_id,
+            'name': f'Product {i}',
+            'description': f'Description for product {i}',
+            'price': 100.0 + i * 10,
+            'stock': 100 - i,
+            'category': {'id': '3', 'name': 'Smartphones'},
+            'images': [
+                f'https://example.com/images/product{i}_1.jpg',
+                f'https://example.com/images/product{i}_2.jpg'
+            ],
+            'createdAt': datetime.utcnow().isoformat(),
+            'isActive': True
+        }
+
+init_mock_products()
+
+@app.route('/api/v1/products', methods=['GET'])
+def get_products():
+    # Параметры фильтрации
+    category_id = request.args.get('categoryId')
+    min_price = request.args.get('minPrice', type=float)
+    max_price = request.args.get('maxPrice', type=float)
+    search = request.args.get('search', '').lower()
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+    sort_by = request.args.get('sortBy', 'createdAt')
+    
+    # Фильтрация
+    filtered_products = []
+    for product in products_db.values():
+        if not product['isActive']:
+            continue
+        
+        # Фильтр по категории
+        if category_id and product['category']['id'] != category_id:
+            continue
+        
+        # Фильтр по цене
+        if min_price and product['price'] < min_price:
+            continue
+        if max_price and product['price'] > max_price:
+            continue
+        
+        # Поиск
+        if search and (search not in product['name'].lower() and 
+                       search not in product['description'].lower()):
+            continue
+        
+        filtered_products.append(product)
+    
+    # Сортировка
+    reverse = sort_by.startswith('-')
+    sort_key = sort_by.lstrip('-')
+    
+    if sort_key == 'price':
+        filtered_products.sort(key=lambda x: x['price'], reverse=reverse)
+    elif sort_key == 'name':
+        filtered_products.sort(key=lambda x: x['name'].lower(), reverse=reverse)
+    else:  # createdAt по умолчанию
+        filtered_products.sort(key=lambda x: x['createdAt'], reverse=not reverse)
+    
+    # Пагинация
+    total = len(filtered_products)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated_products = filtered_products[start:end]
+    
+    return jsonify({
+        'items': paginated_products,
+        'total': total,
+        'page': page,
+        'limit': limit
+    }), 200
+
+@app.route('/api/v1/products/<product_id>', methods=['GET'])
+def get_product(product_id):
+    product = products_db.get(product_id)
+    if not product or not product['isActive']:
+        return jsonify({'error': 'Product not found'}), 404
+    
+    return jsonify(product), 200
+
+@app.route('/api/v1/products', methods=['POST'])
+@jwt_required()
+def create_product():
+    claims = get_jwt()
+    if claims.get('role') not in ['ADMIN', 'MANAGER']:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.get_json()
+    
+    # Валидация
+    required_fields = ['name', 'price', 'categoryId']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'error': f'Missing required field: {field}'}), 400
+    
+    product_id = str(uuid.uuid4())
+    category = categories_db.get(data['categoryId'])
+
+if not category:
+        return jsonify({'error': 'Category not found'}), 404
+    
+    product = {
+        'id': product_id,
+        'name': data['name'],
+        'description': data.get('description', ''),
+        'price': float(data['price']),
+        'stock': int(data.get('stock', 0)),
+        'category': {'id': category['id'], 'name': category['name']},
+        'images': data.get('images', []),
+        'createdAt': datetime.utcnow().isoformat(),
+        'isActive': True
+    }
+    
+    products_db[product_id] = product
+    
+    return jsonify(product), 201
+
+@app.route('/api/v1/products/<product_id>', methods=['PUT'])
+@jwt_required()
+def update_product(product_id):
+    claims = get_jwt()
+    if claims.get('role') not in ['ADMIN', 'MANAGER']:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    product = products_db.get(product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+    
+    data = request.get_json()
+    
+    # Обновление полей
+    updatable_fields = ['name', 'description', 'price', 'stock', 'categoryId']
+    for field in updatable_fields:
+        if field in data:
+            if field == 'categoryId':
+                category = categories_db.get(data['categoryId'])
+                if category:
+                    product['category'] = {'id': category['id'], 'name': category['name']}
+            else:
+                product[field] = data[field]
+    
+    return jsonify(product), 200
+
+@app.route('/api/v1/categories', methods=['GET'])
+def get_categories():
+    # Преобразуем в древовидную структуру
+    categories_by_parent = {}
+    for category in categories_db.values():
+        parent_id = category.get('parentId')
+        if parent_id not in categories_by_parent:
+            categories_by_parent[parent_id] = []
+        categories_by_parent[parent_id].append(category)
+    
+    def build_tree(parent_id=None):
+        result = []
+        for category in categories_by_parent.get(parent_id, []):
+            node = {
+                'id': category['id'],
+                'name': category['name']
+            }
+            children = build_tree(category['id'])
+            if children:
+                node['children'] = children
+            result.append(node)
+        return result
+    
+    tree = build_tree()
+    
+    return jsonify(tree), 200
+
+if name == 'main':
+    app.run(port=5003, debug=True)
+
+from flask import Flask, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+import uuid
+from datetime import datetime
+
+app = Flask(name)
+
+# Mock databases
+orders_db = {}
+order_counter = 1000
+
+@app.route('/api/v1/orders', methods=['POST'])
+@jwt_required()
+def create_order():
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    
+    if not data.get('items') or len(data['items']) == 0:
+        return jsonify({'error': 'Order must contain at least one item'}), 400
+    
+    # Здесь должна быть логика проверки наличия товаров на складе
+    # и получения актуальных цен из Product Service
+    
+    global order_counter
+    order_id = str(uuid.uuid4())
+    order_counter += 1
+    
+    # Расчет общей суммы
+    total_amount = 0
+    for item in data['items']:
+        # Моковая цена - в реальности получаем из Product Service
+        item['price'] = 100.0
+        item['subtotal'] = item['price'] * item['quantity']
+        total_amount += item['subtotal']
+        item['productName'] = f"Product {item['productId'][:8]}"
+    
+    order = {
+        'id': order_id,
+        'userId': current_user_id,
+        'orderNumber': f"ORD-{datetime.now().year}-{order_counter}",
+        'status': 'PENDING',
+        'totalAmount': total_amount,
+        'items': data['items'],
+        'deliveryAddress': data.get('deliveryAddress', ''),
+        'comment': data.get('comment', ''),
+        'createdAt': datetime.utcnow().isoformat(),
+        'updatedAt': datetime.utcnow().isoformat()
+    }
+    
+    orders_db[order_id] = order
+    
+    # Здесь должна быть отправка события в брокер сообщений
+    # для уведомления других сервисов
+    
+    return jsonify(order), 201
+
+@app.route('/api/v1/orders', methods=['GET'])
+@jwt_required()
+def get_user_orders():
+    current_user_id = get_jwt_identity()
+    claims = get_jwt()
+    
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+    status_filter = request.args.get('status')
+    
+    # Фильтрация заказов пользователя
+    user_orders = []
+    for order in orders_db.values():
+        if order['userId'] == current_user_id:
+            if status_filter and order['status'] != status_filter:
+                continue
+            # Создаем сокращенную версию для списка
+            summary = {
+                'id': order['id'],
+                'orderNumber': order['orderNumber'],
+                'status': order['status'],
+                'totalAmount': order['totalAmount'],
+                'itemCount': len(order['items']),
+                'createdAt': order['createdAt']
+            }
+            user_orders.append(summary)
+    
+    # Сортировка по дате создания (новые первые)
+    user_orders.sort(key=lambda x: x['createdAt'], reverse=True)
+    
+    # Пагинация
+    total = len(user_orders)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated_orders = user_orders[start:end]
+    
+    return jsonify({
+        'items': paginated_orders,
+        'total': total,
+        'page': page,
+        'limit': limit
+    }), 200
+
+@app.route('/api/v1/orders/<order_id>', methods=['GET'])
+@jwt_required()
+def get_order_details(order_id):
+    current_user_id = get_jwt_identity()
+    claims = get_jwt()
+    
+    order = orders_db.get(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    # Проверка прав доступа
+    if order['userId'] != current_user_id and claims.get('role') != 'ADMIN':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    return jsonify(order), 200
+
+@app.route('/api/v1/orders/<order_id>/cancel', methods=['PUT'])
+@jwt_required()
+def cancel_order(order_id):
+    current_user_id = get_jwt_identity()
+    
+    order = orders_db.get(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+
+if order['userId'] != current_user_id:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Проверяем, можно ли отменить заказ
+    if order['status'] not in ['PENDING', 'PROCESSING']:
+        return jsonify({'error': 'Cannot cancel order in current status'}), 400
+    
+    order['status'] = 'CANCELLED'
+    order['updatedAt'] = datetime.utcnow().isoformat()
+    
+    return jsonify(order), 200
+
+@app.route('/api/v1/admin/orders', methods=['GET'])
+@jwt_required()
+def get_all_orders():
+    claims = get_jwt()
+    if claims.get('role') != 'ADMIN':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    user_id = request.args.get('userId')
+    status_filter = request.args.get('status')
+    date_from = request.args.get('dateFrom')
+    
+    filtered_orders = []
+    for order in orders_db.values():
+        if user_id and order['userId'] != user_id:
+            continue
+        if status_filter and order['status'] != status_filter:
+            continue
+        if date_from and order['createdAt'] < date_from:
+            continue
+        
+        filtered_orders.append(order)
+    
+    return jsonify({
+        'items': filtered_orders,
+        'total': len(filtered_orders)
+    }), 200
+
+if name == 'main':
+    app.run(port=5004, debug=True)
+
+version: '3.8'
+
+services:
+  # API Gateway (nginx для маршрутизации)
+  api-gateway:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - user-service
+      - product-service
+      - order-service
+
+  # Auth Service
+  auth-service:
+    build: ./auth_service
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=development
+      - JWT_SECRET_KEY=your-super-secret-key-change-this
+
+  # User Service
+  user-service:
+    build: ./user_service
+    ports:
+      - "5002:5002"
+    environment:
+      - FLASK_ENV=development
+
+  # Product Service
+  product-service:
+    build: ./product_service
+    ports:
+      - "5003:5003"
+    environment:
+      - FLASK_ENV=development
+
+  # Order Service
+  order-service:
+    build: ./order_service
+    ports:
+      - "5004:5004"
+    environment:
+      - FLASK_ENV=development
+
+  # Cart Service
+  cart-service:
+    build: ./cart_service
+    ports:
+      - "5005:5005"
+    environment:
+      - FLASK_ENV=development
+
+  # Redis для корзины и кэширования
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  # PostgreSQL для данных
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=ecommerce
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
+# test_api.py
+import requests
+import json
+
+BASE_URL = "http://localhost:8080/api/v1"
+
+def test_auth():
+    """Тестирование аутентификации"""
+    print("=== Testing Auth Service ===")
+    
+    # Регистрация
+    register_data = {
+        "email": "test@example.com",
+        "password": "password123",
+        "name": "Test User"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/register", json=register_data)
+    print(f"Register: {response.status_code}")
+    print(json.dumps(response.json(), indent=2))
+    
+    # Логин
+    login_data = {
+        "email": "test@example.com",
+        "password": "password123"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
+    print(f"\nLogin: {response.status_code}")
+    auth_data = response.json()
+    print(f"Access Token: {auth_data['access_token'][:50]}...")
+    
+    return auth_data['access_token']
+
+def test_products(token):
+    """Тестирование сервиса товаров"""
+    print("\n=== Testing Product Service ===")
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Получение списка товаров
+    response = requests.get(f"{BASE_URL}/products", headers=headers)
+    print(f"Get Products: {response.status_code}")
+    data = response.json()
+    print(f"Total products: {data['total']}")
+    print(f"First product: {data['items'][0]['name']}")
+
+def test_orders(token):
+    """Тестирование сервиса заказов"""
+    print("\n=== Testing Order Service ===")
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Создание заказа
+    order_data = {
+        "items": [
+            {"productId": "123", "quantity": 2},
+            {"productId": "456", "quantity": 1}
+        ],
+        "deliveryAddress": "123 Main St, City",
+        "comment": "Please deliver in the evening"
+    }
+    
+    response = requests.post(f"{BASE_URL}/orders", 
+                            json=order_data, 
+                            headers=headers)
+    print(f"Create Order: {response.status_code}")
+    if response.status_code == 201:
+        order = response.json()
+        print(f"Order created: {order['orderNumber']}")
+        print(f"Total amount: {order['totalAmount']}")
+
+if name == "main":
+    try:
+        token = test_auth()
+        test_products(token)
+        test_orders(token)
+    except Exception as e:
+        print(f"Error: {e}")
+

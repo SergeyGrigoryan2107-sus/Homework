@@ -1,0 +1,190 @@
+1. Кнопка «Удалить пост»
+
+Шаги реализации:
+
+· В шаблоне post.html добавьте кнопку <button id="delete-btn" data-id="{{ post.id }}">Удалить</button>.
+· Создайте модальное окно подтверждения. Можно использовать стандартный confirm(), но для красоты — своё всплывающее окно (скрытое по умолчанию, появляется при клике).
+· При клике на кнопку удаления покажите модальное окно. Если пользователь подтверждает:
+  · Отправьте POST-запрос на /delete/<id> с помощью fetch:
+   
+    fetch(`/delete/${postId}`, { method: 'POST' })
+      .then(response => {
+        if (response.ok) window.location.href = '/';
+      });
+    
+· На бэкенде создайте маршрут /delete/<int:id>, который удаляет пост и возвращает успешный ответ (редирект или JSON).
+
+2. Анимация появления постов на главной
+
+CSS-подготовка:
+
+.post-item {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.post-item.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+JavaScript:
+
+window.addEventListener('load', () => {
+  const posts = document.querySelectorAll('.post-item');
+  posts.forEach((post, index) => {
+    setTimeout(() => {
+      post.classList.add('visible');
+    }, index * 100); // задержка 100 мс между постами
+  });
+});
+3. Ограничение длины текста поста
+
+HTML:
+
+<textarea id="post-content" maxlength="300"></textarea>
+<div id="char-counter">0/300</div>
+JavaScript:
+
+const textarea = document.getElementById('post-content');
+const counter = document.getElementById('char-counter');
+
+textarea.addEventListener('input', () => {
+  const len = textarea.value.length;
+  counter.textContent = `${len}/300`;
+  if (len > 300) {
+    textarea.classList.add('error'); // красная рамка
+  } else {
+    textarea.classList.remove('error');
+  }
+});
+CSS:
+
+```css
+textarea.error {
+  border: 2px solid red;
+}
+
+4. Живой поиск по постам
+
+HTML (index.html):
+
+html
+<input type="text" id="search" placeholder="Поиск...">
+<ul id="posts-list">
+  <li>...</li>
+  ...
+</ul>
+
+JavaScript:
+
+javascript
+const searchInput = document.getElementById('search');
+const posts = document.querySelectorAll('#posts-list li');
+
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.toLowerCase();
+  posts.forEach(post => {
+    const text = post.textContent.toLowerCase();
+    if (text.includes(query)) {
+      post.style.display = ''; // показать
+    } else {
+      post.style.display = 'none'; // скрыть
+    }
+  });
+});
+
+5. Тёмная тема с сохранением в localStorage
+
+HTML:
+
+html
+<button id="theme-toggle">🌙 Тёмная тема</button>
+
+CSS:
+
+css
+body.dark {
+  background-color: #333;
+  color: #fff;
+}
+
+JavaScript:
+
+javascript
+const toggle = document.getElementById('theme-toggle');
+const body = document.body;
+
+// При загрузке проверяем сохранённую тему
+if (localStorage.getItem('theme') === 'dark') {
+  body.classList.add('dark');
+  toggle.textContent = '☀️ Светлая тема';
+}
+
+toggle.addEventListener('click', () => {
+  body.classList.toggle('dark');
+  const isDark = body.classList.contains('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  toggle.textContent = isDark ? '☀️ Светлая тема' : '🌙 Тёмная тема';
+});
+
+6. Редактирование поста
+
+Бэкенд (Flask):
+
+· Создайте маршрут /edit/<int:id> с методами GET и POST.
+· GET: найдите пост по id, передайте его в шаблон (можно тот же, что и для создания, но с заполненными полями).
+· POST: получите новые данные из формы, обновите пост в data.py (например, в списке) и перенаправьте на страницу поста.
+
+Шаблон (edit.html):
+
+html
+<form method="post">
+  <input type="text" name="title" value="{{ post.title }}">
+  <textarea name="content">{{ post.content }}</textarea>
+  <button type="submit">Сохранить</button>
+</form>
+
+data.py (пример):
+
+python
+posts = [{"id": 1, "title": "...", "content": "..."}]
+def update_post(post_id, new_title, new_content):
+    for post in posts:
+        if post["id"] == post_id:
+            post["title"] = new_title
+            post["content"] = new_content
+            break
+
+7. Сортировка постов по лайкам без перезагрузки
+
+HTML (подготовка):
+
+html
+<button id="sort-likes">Сортировать по лайкам</button>
+<ul id="posts-list">
+  <li data-likes="5">Пост 1 (❤️ 5)</li>
+  <li data-likes="12">Пост 2 (❤️ 12)</li>
+  ...
+</ul>
+
+JavaScript:
+
+javascript
+document.getElementById('sort-likes').addEventListener('click', () => {
+  const list = document.getElementById('posts-list');
+  const items = Array.from(list.children);
+
+  items.sort((a, b) => {
+    const likesA = parseInt(a.dataset.likes, 10);
+    const likesB = parseInt(b.dataset.likes, 10);
+    return likesB - likesA; // по убыванию
+  });
+
+  // Переставить элементы в DOM
+  items.forEach(item => list.appendChild(item));
+});
+`
+
+Примечание: если количество лайков выводится только в тексте, можно парсить его регулярным выражением или добавить скрытый атрибут data-likes при генерации шаблона.
+
+Эти подсказки помогут реализовать каждую задачу. Для более глубокого понимания изучите документацию по JavaScript (fetch, события, манипуляции DOM) и Flask (маршруты, обработка форм).

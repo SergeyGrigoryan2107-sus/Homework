@@ -1,0 +1,154 @@
+Сергей, [26.02.2026 16:54]
+Выполнение домашнего задания: Django модели + FastAPI API
+
+Ниже приведено пошаговое решение вашего задания. Оно включает создание моделей Django, их регистрацию в админке и разработку трёх эндпоинтов FastAPI для получения данных из этих моделей.
+
+1. Структура проекта
+
+Предполагается, что у вас уже есть Django проект. Если нет – создайте его:
+
+django-admin startproject myproject
+cd myproject
+python manage.py startapp school
+Добавьте приложение school в INSTALLED_APPS файла settings.py.
+
+2. Модели Django
+
+В файле school/models.py опишите три модели:
+
+from django.db import models
+
+class Student(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Имя")
+    grade = models.CharField(max_length=3, verbose_name="Класс")  # например "7A"
+    birth_date = models.DateField(verbose_name="Дата рождения")
+
+    def __str__(self):
+        return f"{self.name} ({self.grade})"
+
+    class Meta:
+        verbose_name = "Студент"
+        verbose_name_plural = "Студенты"
+
+
+class Lesson(models.Model):
+    subject = models.CharField(max_length=100, verbose_name="Предмет")
+    date = models.DateTimeField(verbose_name="Дата и время урока")
+    teacher = models.CharField(max_length=100, verbose_name="Учитель")
+    room = models.CharField(max_length=10, verbose_name="Кабинет")
+
+    def __str__(self):
+        return f"{self.subject} - {self.date.strftime('%d.%m.%Y %H:%M')}"
+
+    class Meta:
+        verbose_name = "Урок"
+        verbose_name_plural = "Уроки"
+
+
+class Homework(models.Model):
+    lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.CASCADE,
+        related_name="homeworks",
+        verbose_name="Урок"
+    )
+    description = models.TextField(verbose_name="Текст задания")
+    deadline = models.DateTimeField(verbose_name="Дедлайн")
+
+    def __str__(self):
+        return f"ДЗ по {self.lesson.subject} до {self.deadline.strftime('%d.%m.%Y %H:%M')}"
+
+    class Meta:
+        verbose_name = "Домашнее задание"
+        verbose_name_plural = "Домашние задания"
+Выполните миграции:
+
+python manage.py makemigrations
+python manage.py migrate
+3. Регистрация моделей в админке
+
+В файле school/admin.py настройте отображение моделей:
+
+from django.contrib import admin
+from .models import Student, Lesson, Homework
+
+@admin.register(Student)
+class StudentAdmin(admin.ModelAdmin):
+    list_display = ('name', 'grade', 'birth_date')
+    search_fields = ('name',)
+
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'date', 'teacher')
+    list_filter = ('subject',)
+
+@admin.register(Homework)
+class HomeworkAdmin(admin.ModelAdmin):
+    list_display = ('lesson', 'deadline')
+    # можно добавить поиск по уроку или фильтр по дате, но по заданию достаточно этого
+Создайте суперпользователя и зайдите в админку, чтобы убедиться, что всё работает:
+
+python manage.py createsuperuser
+python manage.py runserver
+4. FastAPI эндпоинты
+
+Теперь создадим FastAPI приложение, которое будет использовать те же модели и ту же базу данных. Для этого установите FastAPI и ASGI-сервер (например, uvicorn):
+
+pip install fastapi uvicorn
+В корне проекта (рядом с manage.py) создайте файл api.py. В нём необходимо инициализировать Django, чтобы можно было импортировать модели и работать с ORM.
+
+`python
+import os
+import django
+from fastapi import FastAPI
+from django.core.asgi import get_asgi_application
+
+# Указываем настройки Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+django.setup()  # инициализация Django
+
+# Теперь можно импортировать модели Django
+from school.models import Student, Lesson, Homework
+
+app = FastAPI()
+
+@app.get("/api/students")
+async def get_students():
+    students = Student.objects.all().values('name', 'grade', 'birth_date')
+    # Преобразуем QuerySet в список, дату рождения в строку для JSON
+    return list(students)
+
+@app.get("/api/lessons")
+async def get_lessons():
+    lessons = Lesson.objects.all().values('subject', 'date', 'teacher', 'room')
+    return list(lessons)
+
+Сергей, [26.02.2026 16:54]
+@app.get("/api/homework")
+async def get_homework():
+    # Для удобства добавим данные связанного урока
+    homework = Homework.objects.select_related('lesson').all().values(
+        'lesson__subject', 'description', 'deadline'
+    )
+    # Переименуем ключ lesson__subject в subject для читаемости
+    result = []
+    for hw in homework:
+        result.append({
+            'subject': hw['lesson__subject'],
+            'description': hw['description'],
+            'deadline': hw['deadline']
+        })
+    return result
+
+Запустите FastAPI сервер:
+
+bash
+uvicorn api:app --reload
+`
+
+Теперь доступны эндпоинты:
+
+· GET http://127.0.0.1:8000/api/students
+· GET http://127.0.0.1:8000/api/lessons
+· GET http://127.0.0.1:8000/api/homework
+

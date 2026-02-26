@@ -1,0 +1,329 @@
+Сергей, [26.02.2026 16:56]
+'poster_url': poster_url,
+                    'imdb_id': imdb_id,
+                    'imdb_rating': imdb_rating,
+                    'genres': ', '.join(genres) if genres else 'Не указаны',
+                    'source_url': url,
+                    'parsed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        except requests.exceptions.RequestException as e:
+            print(f"Ошибка при получении данных о фильме: {e}")
+            return None
+        except Exception as e:
+            print(f"Ошибка при обработке ответа: {e}")
+            return None
+    @staticmethod
+    def get_popular_movies(limit=10):
+        url = 'https://www.imdb.com/chart/moviemeter'
+        try:
+           response = requests.get(url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                                  'AppleWebKit/537.36 '
+           },timeout=10)
+
+           soup = BeautifulSoup(response.content, 'html.parser')
+           movies = []
+           movie_elements = soup.select('td.titleColumn')[:limit]
+           for movie_element in movie_elements:
+               title_element = movie_element.find('a')
+               year_element = movie_element.find('span')
+               if title_element and year_element:
+                   title = title_element.text
+                   year = year_element.text.strip('()')
+                   movies.append({'title': title, 'year': year})
+           return movies
+        except Exception as e:
+            print(f"Ошибка при получении популярных фильмов: {e}")
+            return []
+def test_parser():
+    print("Тестирование IMDBParser")
+    query = "The Matrix"
+    print(f"Поиск фильма: {query}")
+    result = IMDBParser.search_movie(query)
+    if result:
+        print("Результат поиска:")
+        for key, value in result.items():
+            print(f"{key}: {value}")
+    else:
+        print("Фильм не найден")
+    return result
+
+if name == "main":
+    test_parser()
+
+Код для movies/views.py:
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator
+from django.db.models import Q, Avg, Count
+
+import json
+from .models import Movie, Rating
+from .parsers import IMDBParser
+
+@require_GET
+def movie_list(request):
+    movies = Movie.objects.all()
+    search_query = request.GET.get('q', '')
+    if search_query:
+        movies = movies.filter(Q(title__icontains=search_query) | Q(description__icontains=search_query))
+    sort_by = request.GET.get('sort', 'rating')
+    if sort_by == 'year_desc':
+        movies = movies.order_by('-year')
+    elif sort_by == 'year_asc':
+        movies = movies.order_by('year')
+    elif sort_by == 'title':
+        movies = movies.order_by('title')
+    elif sort_by == 'rating_count':
+        movies = movies.order_by('-rating_count')
+    else:
+        movies = movies.order_by('-rating')
+    paginator = Paginator(movies, 5)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    context = {
+        'page_obj': page_obj,
+        'sort_by': sort_by,
+        'total_movies': movies.count(),
+    }
+    return render(request, 'movies/list.html', context)
+
+@require_GET
+def movie_detail(request, movie_id):
+    movie = get_object_or_404(Movie, id=movie_id)
+    ratings = movie.ratings.all().order_by('-created_at')
+    rating_stats = ratings.aggregate(avg_value=Avg('value'), count=Count('id'),
+                                     min_value=Min('value'), max_value=Max('value'))
+    context = {
+        'movie': movie,
+        'ratings': ratings,
+        'rating_stats': rating_stats,
+        'color_class': movie.get_color_by_rating(),
+    }
+    return render(request, 'movies/detail.html', context)
+
+Сергей, [26.02.2026 16:56]
+@require_POST
+@csrf_exempt
+def add_rating(request, movie_id):
+    movie = get_object_or_404(Movie, id=movie_id)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        rating = Rating.objects.create(
+                movie=movie,
+                user_name=data.get('user_name','Anonymous'),
+                value=data.get('value', 5),
+                comment=data.get('comment', '')
+        )
+        movie.update_rating()
+        response_data = {
+            'success': True,
+            'message': 'Rating added successfully',
+            'rating': {
+                    'id': rating.id,
+                    'value': rating.value,
+                    'user_name': rating.user_name,
+                    'comment': rating.comment,
+                    'created_at': rating.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            },
+            'movie': {
+                    'average_rating': round(movie.average_rating,1),
+                    'rating_count': movie.rating_count,
+                    'color_class': movie.get_color_by_rating()
+                }
+        }
+        return JsonResponse(response_data)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False,
+                             'error': 'Неверный формат данных'}, status=400)
+    except ValueError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Внутренняя ошибка сервера: {str(e)}'},
+                            status=500)
+@require_GET
+def search_imdb(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({'success': False, 'error': 'Пустой запрос'})
+    if len(query) < 2:
+        return JsonResponse({'success': False, 'error': 'Слишком короткий запрос'})
+
+Сергей, [26.02.2026 16:57]
+Это фрагмент кода Django views, который содержит два представления: add_rating для добавления рейтинга к фильму и search_imdb для поиска по IMDB (пока заглушка). Давайте разберём его подробно, отметим сильные стороны, возможные проблемы и предложим улучшения.
+
+Общая структура
+
+· Используются декораторы @require_POST и @csrf_exempt для add_rating, что разрешает POST-запросы без CSRF-токена (удобно для API, но требует осторожности).
+· В add_rating ожидается JSON в теле запроса, создаётся запись Rating, обновляется рейтинг фильма, возвращается JSON с данными.
+· search_imdb пока только проверяет параметр q и возвращает заглушку с ошибкой (или успех? Сейчас при корректном запросе ничего не возвращается — нужно добавить логику поиска).
+
+Детальный разбор add_rating
+
+Плюсы
+
+· Использует get_object_or_404 для безопасного получения фильма.
+· Обрабатывает исключения (JSONDecodeError, ValueError, общее Exception) и возвращает соответствующие HTTP-статусы.
+· Обновляет рейтинг фильма через метод модели (movie.update_rating()), что хорошо для инкапсуляции логики.
+· Возвращает обогащённый ответ: не только созданный рейтинг, но и обновлённую информацию о фильме (средний рейтинг, количество оценок, цветовой класс).
+
+Возможные проблемы и улучшения
+
+1. CSRF отключён
+      @csrf_exempt убирает защиту от CSRF-атак. Если это API, которое будут вызывать сторонние клиенты (например, через JavaScript), это нормально. Но если форма отправляется с того же сайта, лучше использовать CSRF-токен. Можно оставить, но добавить другие меры (например, проверку Origin/Referer).
+2. Валидация входных данных
+   · user_name по умолчанию 'Anonymous' — это нормально, но стоит подумать о максимальной длине.
+   · value по умолчанию 5, но не проверяется, что оно в допустимых пределах (например, от 1 до 10). Следует добавить проверку и возвращать ошибку, если значение вне диапазона.
+   · comment не очищается от потенциально опасного HTML. Если комментарии будут выводиться без экранирования, это уязвимость XSS. Рекомендуется либо экранировать при выводе, либо использовать библиотеку для санитизации.
+3. Метод update_rating()
+      Предполагается, что он существует в модели Movie и правильно пересчитывает средний рейтинг и количество оценок. Хорошо бы убедиться, что он атомарен (использует F-выражения или транзакции), чтобы избежать состояний гонки при параллельных запросах.
+4. Обработка исключений
+   · ValueError может быть выброшен при создании Rating (например, если значение не число). Но лучше проверять это до создания объекта.
+   · Общий Exception — это хорошо для предотвращения падения сервера, но в логах стоит регистрировать полную информацию об ошибке для отладки.
+5. Возвращаемые данные
+      Формат даты в rating.created_at задан как '%Y-%m-%d %H:%M:%S' — приемлемо. Можно рассмотреть возврат в ISO-формате (например, через rating.created_at.isoformat()), чтобы клиент мог легко парсить.
+6. Идемпотентность
+      Если клиент отправит один и тот же запрос дважды, создадутся два рейтинга. Возможно, стоит добавить проверку на дубликаты (например, по комбинации user_name и movie, если имя пользователя уникально для сессии). Но для простого приложения это не критично.
+
+Улучшенный вариант add_rating
+
+`python
+import json
+import logging
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
+from .models import Movie, Rating
+
+logger = logging.getLogger(name)
+
+@require_POST
+@csrf_exempt
+def add_rating(request, movie_id):
+    movie = get_object_or_404(Movie, id=movie_id)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        
+        # Валидация
+        user_name = data.get('user_name', 'Anonymous')[:50]  # ограничим длину
+
+Сергей, [26.02.2026 16:57]
+value = data.get('value', 5)
+        try:
+            value = int(value)
+            if not (1 <= value <= 10):
+                raise ValueError("Рейтинг должен быть от 1 до 10")
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Некорректное значение рейтинга'}, status=400)
+        
+        comment = data.get('comment', '')[:500]  # ограничим длину комментария
+        
+        rating = Rating.objects.create(
+            movie=movie,
+            user_name=user_name,
+            value=value,
+            comment=comment
+        )
+        movie.update_rating()
+        
+        response_data = {
+            'success': True,
+            'message': 'Rating added successfully',
+            'rating': {
+                'id': rating.id,
+                'value': rating.value,
+                'user_name': rating.user_name,
+                'comment': rating.comment,
+                'created_at': rating.created_at.isoformat()  # ISO 8601
+            },
+            'movie': {
+                'average_rating': round(movie.average_rating, 1),
+                'rating_count': movie.rating_count,
+                'color_class': movie.get_color_by_rating()
+            }
+        }
+        return JsonResponse(response_data)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Неверный формат данных'}, status=400)
+    except Exception as e:
+        logger.exception("Ошибка при добавлении рейтинга к фильму %s", movie_id)
+        return JsonResponse({'success': False, 'error': 'Внутренняя ошибка сервера'}, status=500)
+
+Детальный разбор search_imdb
+
+Текущее состояние
+
+· Проверяет наличие параметра q и его длину.
+· Если запрос пустой или слишком короткий, возвращает ошибку.
+· При корректном запросе функция ничего не возвращает (нет return после проверок) — это приведёт к ошибке HTTP 500 (Django вернёт ответ по умолчанию, но это неправильно). Нужно добавить реализацию поиска.
+
+Что нужно сделать
+
+1. Добавить вызов внешнего API (например, OMDb API, IMDb API через библиотеку imdbpy или другой источник).
+2. Обработать возможные ошибки сети, таймауты, неверный ключ API.
+3. Вернуть результаты в JSON.
+4. Желательно кэшировать результаты, чтобы не превышать лимиты API.
+
+Пример реализации с OMDb API
+
+python
+import requests
+from django.conf import settings
+from django.views.decorators.http import require_GET
+
+OMDB_API_KEY = getattr(settings, 'OMDB_API_KEY', None)
+
+@require_GET
+def search_imdb(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({'success': False, 'error': 'Пустой запрос'}, status=400)
+    if len(query) < 2:
+        return JsonResponse({'success': False, 'error': 'Слишком короткий запрос'}, status=400)
+    
+    if not OMDB_API_KEY:
+        return JsonResponse({'success': False, 'error': 'API ключ не настроен'}, status=500)
+    
+    try:
+        url = 'http://www.omdbapi.com/'
+        params = {
+            'apikey': OMDB_API_KEY,
+            's': query,
+            'type': 'movie',
+            'r': 'json'
+        }
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get('Response') == 'True':
+            movies = data.get('Search', [])
+            # Преобразуем в удобный формат
+            results = []
+            for movie in movies:
+                results.append({
+                    'imdb_id': movie.get('imdbID'),
+                    'title': movie.get('Title'),
+                    'year': movie.get('Year'),
+                    'poster': movie.get('Poster'),
+                    'type': movie.get('Type')
+                })
+            return JsonResponse({'success': True, 'results': results})
+        else:
+
+Сергей, [26.02.2026 16:57]
+error_msg = data.get('Error', 'Ничего не найдено')
+            return JsonResponse({'success': False, 'error': error_msg}, status=404)
+    except requests.exceptions.RequestException as e:
+        logger.exception("Ошибка при запросе к OMDb API")
+        return JsonResponse({'success': False, 'error': 'Ошибка при обращении к внешнему сервису'}, status=502)
+    except Exception as e:
+        logger.exception("Неожиданная ошибка в search_imdb")
+        return JsonResponse({'success': False, 'error': 'Внутренняя ошибка сервера'}, status=500)
+
+
+Если у вас есть конкретные вопросы по этому коду или вы хотите, чтобы я помог с реализацией недостающих частей (например, модели Movie и Rating), дайте знать!

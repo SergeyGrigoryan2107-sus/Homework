@@ -1,0 +1,417 @@
+Сергей, [26.02.2026 16:49]
+Решение домашнего задания: Часть 4 — API, авторизация и роли пользователей
+
+Введение
+
+В этой части мы превратим CRM в полноценный backend с REST API, JWT-авторизацией и разграничением прав для трёх ролей: account_manager, executor, client.
+Все примеры кода предполагают, что у вас уже есть модели Client, Project, Task, TaskStatus из предыдущих частей. Если их нет – создайте простейшие варианты (см. подсказки в тексте).
+
+---
+
+Шаг 1. Установка Django REST Framework и JWT
+
+Установите необходимые пакеты:
+
+pip install djangorestframework djangorestframework-simplejwt
+Добавьте rest_framework и rest_framework_simplejwt в INSTALLED_APPS файла settings.py:
+
+INSTALLED_APPS = [
+    ...
+    'rest_framework',
+    'crm',  # ваше приложение
+]
+В том же файле укажите настройки DRF и JWT:
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',  # по умолчанию доступ только авторизованным
+    ),
+}
+Теперь при переходе по адресу /api/ вы увидите интерфейс DRF (после того как создадите маршруты).
+
+---
+
+Шаг 2. Создание сериализаторов
+
+Создайте файл crm/api/serializers.py и опишите сериализаторы для каждой модели.
+Пример (адаптируйте под свои поля):
+
+from rest_framework import serializers
+from crm.models import Client, Project, Task, TaskStatus
+
+class ClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Client
+        fields = '__all__'  # или перечислите нужные поля: id, name, contact_person, email
+
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = '__all__'
+
+class TaskStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskStatus
+        fields = '__all__'
+
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = '__all__'
+Примечание: если в моделях есть внешние ключи, DRF автоматически будет отображать их ID. Если хотите вложенные данные – используйте depth = 1 или настройте отдельно, но для начала достаточно ID.
+
+---
+
+Шаг 3. Создание API views
+
+Создайте файл crm/api/views.py. Используем готовые generic-классы для CRUD операций.
+
+`python
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from crm.models import Client, Project, Task, TaskStatus
+from .serializers import ClientSerializer, ProjectSerializer, TaskSerializer, TaskStatusSerializer
+
+# ----- Client views -----
+class ClientList(generics.ListCreateAPIView):
+    queryset = Client.objects.all()
+    serializer_class = ClientSerializer
+    permission_classes = [IsAuthenticated]  # позже заменим на кастомные
+
+class ClientDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Client.objects.all()
+    serializer_class = ClientSerializer
+    permission_classes = [IsAuthenticated]
+
+# ----- Project views -----
+class ProjectList(generics.ListCreateAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated]
+
+class ProjectDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated]
+
+# ----- Task views -----
+class TaskList(generics.ListCreateAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+
+class TaskDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+
+# ----- TaskStatus views -----
+class TaskStatusList(generics.ListCreateAPIView):
+    queryset = TaskStatus.objects.all()
+    serializer_class = TaskStatusSerializer
+    permission_classes = [IsAuthenticated]
+
+Сергей, [26.02.2026 16:49]
+class TaskStatusDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = TaskStatus.objects.all()
+    serializer_class = TaskStatusSerializer
+    permission_classes = [IsAuthenticated]
+
+Почему именно такие классы?
+ListCreateAPIView даёт GET (список) и POST (создание).
+RetrieveUpdateDestroyAPIView даёт GET (одна запись), PUT/PATCH (обновление), DELETE (удаление).
+
+---
+
+Шаг 4. Настройка маршрутов API
+
+Создайте файл crm/api/urls.py:
+
+python
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # Client
+    path('clients/', views.ClientList.as_view(), name='client-list'),
+    path('clients/<int:pk>/', views.ClientDetail.as_view(), name='client-detail'),
+
+    # Project
+    path('projects/', views.ProjectList.as_view(), name='project-list'),
+    path('projects/<int:pk>/', views.ProjectDetail.as_view(), name='project-detail'),
+
+    # Task
+    path('tasks/', views.TaskList.as_view(), name='task-list'),
+    path('tasks/<int:pk>/', views.TaskDetail.as_view(), name='task-detail'),
+
+    # TaskStatus
+    path('statuses/', views.TaskStatusList.as_view(), name='taskstatus-list'),
+    path('statuses/<int:pk>/', views.TaskStatusDetail.as_view(), name='taskstatus-detail'),
+]
+
+Подключите этот файл в головном urls.py проекта:
+
+python
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include('crm.api.urls')),
+]
+
+Теперь при переходе по /api/clients/ вы должны увидеть JSON-ответ (пока пустой список, если нет данных). DRF предоставляет удобную браузерную оболочку.
+
+---
+
+Шаг 5. Добавление JWT авторизации
+
+Добавьте эндпоинты для получения и обновления токенов. В головной urls.py подключите встроенные маршруты Simple JWT:
+
+python
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/', include('crm.api.urls')),
+]
+
+Тестирование:
+Отправьте POST-запрос на /api/token/ с JSON:
+
+json
+{
+    "username": "your_username",
+    "password": "your_password"
+}
+
+В ответ получите:
+
+json
+{
+    "access": "eyJ...",
+    "refresh": "eyJ..."
+}
+
+Для доступа к защищённым эндпоинтам добавляйте заголовок:
+Authorization: Bearer <access_token>
+
+---
+
+Шаг 6. Создание ролей пользователей
+
+Мы будем использовать группы Django для разделения ролей. В админке создайте три группы:
+
+· account_manager
+· executor
+· client
+
+Или создайте их программно через миграцию/фикстуру. Например, можно создать в файле crm/management/commands/create_groups.py команду для инициализации.
+
+Назначение прав через группы (для примера, можно детализировать позже через кастомные permissions):
+
+· account_manager – можно дать права на добавление/изменение всех моделей (через стандартные права Django: add_client, change_client и т.д.).
+· executor – обычно не нужно давать прав на изменение клиентов и проектов, только просмотр своих задач.
+· client – только просмотр своих проектов и задач.
+
+Но основные ограничения мы реализуем через кастомные permissions в следующем шаге. Группы будем использовать для идентификации роли.
+
+Важно: свяжите пользователей с соответствующими профилями.
+
+· Для client: скорее всего, у вас есть модель Client, и у неё есть поле user (OneToOne с User).
+· Для executor: можно либо создать модель Executor с привязкой к User, либо использовать само поле User и считать, что любой пользователь в группе executor – исполнитель.
+· Для account_manager – просто группа, без дополнительной модели.
+
+Допустим, в модели Client есть поле user:
+
+python
+from django.contrib.auth.models import User
+
+class Client(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=100)
+    # ... другие поля
+`
+
+В модели Task добавьте поле executor (ForeignKey на User):
+
+Сергей, [26.02.2026 16:49]
+class Task(models.Model):
+    executor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='tasks')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    # ...
+---
+
+Шаг 7. Ограничение доступа через permissions
+
+Создайте файл crm/api/permissions.py и реализуйте классы проверки прав.
+
+from rest_framework import permissions
+
+class IsAccountManager(permissions.BasePermission):
+    """Разрешение только для менеджеров (группа account_manager)"""
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name='account_manager').exists()
+
+class IsExecutor(permissions.BasePermission):
+    """Разрешение для исполнителей (группа executor)"""
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name='executor').exists()
+
+class IsClient(permissions.BasePermission):
+    """Разрешение для клиентов (группа client)"""
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name='client').exists()
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Объект можно редактировать только его владельцу.
+    Для задач владелец – исполнитель (executor).
+    Для проектов/клиентов владелец – клиент (связанный пользователь).
+    """
+    def has_object_permission(self, request, view, obj):
+        # GET, HEAD, OPTIONS разрешены всем аутентифицированным
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Проверка для Task: владелец = executor
+        if hasattr(obj, 'executor'):
+            return obj.executor == request.user
+
+        # Проверка для Project: владелец = клиент (user связанный с клиентом)
+        if hasattr(obj, 'client') and hasattr(obj.client, 'user'):
+            return obj.client.user == request.user
+
+        # Для Client: владелец = user связанный с клиентом
+        if hasattr(obj, 'user'):
+            return obj.user == request.user
+
+        return False
+Теперь модифицируем views, добавив соответствующие permissions.
+
+Для views, которые должны быть доступны только менеджерам (например, создание/удаление клиентов и проектов), используем IsAccountManager. Для остальных – комбинации.
+
+Пример для ClientList (менеджер может всё, остальные только читать своё):
+
+class ClientList(generics.ListCreateAPIView):
+    serializer_class = ClientSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.groups.filter(name='account_manager').exists():
+            return Client.objects.all()
+        elif user.groups.filter(name='client').exists():
+            # клиент видит только свою запись (если связан)
+            return Client.objects.filter(user=user)
+        else:
+            # исполнитель не должен видеть клиентов, но можно вернуть пустой queryset
+            return Client.objects.none()
+Для ClientDetail:
+
+class ClientDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ClientSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # базовая фильтрация для безопасности
+        user = self.request.user
+        if user.groups.filter(name='account_manager').exists():
+            return Client.objects.all()
+        elif user.groups.filter(name='client').exists():
+            return Client.objects.filter(user=user)
+        else:
+            return Client.objects.none()
+Аналогично для ProjectList и ProjectDetail:
+
+`python
+class ProjectList(generics.ListCreateAPIView):
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.groups.filter(name='account_manager').exists():
+            return Project.objects.all()
+
+Сергей, [26.02.2026 16:49]
+elif user.groups.filter(name='client').exists():
+            # проекты, принадлежащие клиенту этого пользователя
+            return Project.objects.filter(client__user=user)
+        else:
+            # исполнитель проекты не видит (или видит только проекты своих задач? можно добавить)
+            return Project.objects.none()
+
+Для TaskList:
+
+python
+class TaskList(generics.ListCreateAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.groups.filter(name='account_manager').exists():
+            return Task.objects.all()
+        elif user.groups.filter(name='executor').exists():
+            return Task.objects.filter(executor=user)
+        elif user.groups.filter(name='client').exists():
+            # задачи из проектов клиента
+            return Task.objects.filter(projectclientuser=user)
+        else:
+            return Task.objects.none()
+
+Для TaskDetail используем IsOwnerOrReadOnly дополнительно, чтобы исполнитель мог менять только свои задачи, а менеджер – все. Но так как в get_queryset мы уже отфильтровали, можно просто проверить права на объект через IsOwnerOrReadOnly. Добавим его в permission_classes:
+
+python
+class TaskDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        # базовая фильтрация как в TaskList
+        user = self.request.user
+        if user.groups.filter(name='account_manager').exists():
+            return Task.objects.all()
+        elif user.groups.filter(name='executor').exists():
+            return Task.objects.filter(executor=user)
+        elif user.groups.filter(name='client').exists():
+            return Task.objects.filter(projectclientuser=user)
+        else:
+            return Task.objects.none()
+
+Примечание: метод has_object_permission в IsOwnerOrReadOnly будет вызван только после того, как объект будет получен из queryset. Благодаря фильтрации в get_queryset пользователь уже не сможет получить доступ к чужому объекту, но IsOwnerOrReadOnly добавит дополнительную проверку на уровне объекта для небезопасных методов.
+
+Для TaskStatus можно оставить доступ только для менеджеров, либо разрешить чтение всем, но изменение только менеджерам. Например:
+
+python
+class TaskStatusList(generics.ListCreateAPIView):
+    queryset = TaskStatus.objects.all()
+    serializer_class = TaskStatusSerializer
+    permission_classes = [IsAuthenticated, IsAccountManager]  # только менеджеры
+
+class TaskStatusDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = TaskStatus.objects.all()
+    serializer_class = TaskStatusSerializer
+    permission_classes = [IsAuthenticated, IsAccountManager]
+`
+
+---
+
+Проверка работоспособности
+
+1. Создайте несколько пользователей и назначьте их в соответствующие группы через админку.
+2. Для клиента: создайте запись Client и укажите в поле user нужного пользователя.
+3. Получите токен для каждого пользователя и попробуйте делать запросы к разным эндпоинтам.
+
+Примеры:
+
+· Менеджер: может создавать/изменять/удалять любых клиентов, проекты, задачи.
+· Исполнитель: при GET /api/tasks/ видит только задачи, где executor = request.user. При попытке изменить чужую задачу получит 403.
+· Клиент: при GET /api/projects/ видит только проекты своей компании (где client.user = request.user). Аналогично с задачами.
+

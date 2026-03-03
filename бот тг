@@ -1,0 +1,32 @@
+import asyncio
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+
+# Включаем логирование, чтобы видеть сообщения об ошибках
+logging.basicConfig(level=logging.INFO)
+
+# Создаем объекты бота и диспетчера
+# ВМЕСТО "ВАШ_ТОКЕН_ЗДЕСЬ" вставьте токен, полученный от BotFather
+bot = Bot(token="ВАШ_ТОКЕН_ЗДЕСЬ")
+dp = Dispatcher()
+
+# Обработчик команды /start
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer(
+        "Привет! Я твой первый бот. Напиши мне что-нибудь, и я повторю это за тобой."
+    )
+
+# Обработчик любого текстового сообщения
+@dp.message()
+async def echo(message: types.Message):
+    # Отправляем обратно то же сообщение, что прислал пользователь
+    await message.answer(f"Ты написал: {message.text}")
+
+# Запуск бота
+async def main():
+    await dp.start_polling(bot)
+
+if name == "main":
+    asyncio.run(main())

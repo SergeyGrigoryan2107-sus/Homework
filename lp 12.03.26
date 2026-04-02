@@ -1,0 +1,84 @@
+import datetime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship, Session
+
+# Создаём базовый класс для моделей
+Base = declarative_base()
+
+# Модель Post
+class Post(Base):
+    __tablename__ = 'posts'
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    content = Column(Text)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+
+    # Связь "один ко многим" с комментариями
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+
+# Модель Comment
+class Comment(Base):
+    __tablename__ = 'comments'
+
+    id = Column(Integer, primary_key=True)
+    post_id = Column(Integer, ForeignKey('posts.id'), nullable=False)
+    author_name = Column(String, nullable=False)
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+
+    # Связь "многие к одному" с постом
+    post = relationship("Post", back_populates="comments")
+
+# Настройка базы данных (SQLite, файл blog.db)
+engine = create_engine('sqlite:///blog.db', echo=False)
+
+# Создание таблиц
+Base.metadata.create_all(engine)
+
+# Скрипт для заполнения и вывода данных
+def main():
+    # Создаём сессию для работы с БД
+    with Session(engine) as session:
+        # Очищаем таблицы (опционально, для повторного запуска)
+        session.query(Comment).delete()
+        session.query(Post).delete()
+        session.commit()
+
+        # Создаём посты
+        posts_data = [
+            Post(title="Первый пост", content="Содержимое первого поста."),
+            Post(title="Второй пост", content="Содержимое второго поста."),
+            Post(title="Третий пост", content="Содержимое третьего поста.")
+        ]
+        session.add_all(posts_data)
+        session.commit()  # сохраняем, чтобы у постов появились id
+
+        # Добавляем комментарии к каждому посту
+        comments_data = [
+            # Комментарии к первому посту
+            Comment(author_name="Анна", text="Отличный пост!", post=posts_data[0]),
+            Comment(author_name="Иван", text="Спасибо, очень полезно.", post=posts_data[0]),
+            Comment(author_name="Мария", text="Жду продолжения!", post=posts_data[0]),
+            # Комментарии ко второму посту
+            Comment(author_name="Петр", text="Интересная мысль.", post=posts_data[1]),
+            Comment(author_name="Ольга", text="Согласен с автором.", post=posts_data[1]),
+            # Комментарии к третьему посту
+            Comment(author_name="Дмитрий", text="Класс!", post=posts_data[2]),
+            Comment(author_name="Елена", text="Нужно больше таких статей.", post=posts_data[2]),
+            Comment(author_name="Сергей", text="Лучшее, что я читал сегодня.", post=posts_data[2])
+        ]
+        session.add_all(comments_data)
+        session.commit()
+
+        # Вывод информации: "Пост: Название", затем список комментариев (автор и текст)
+        for post in session.query(Post).all():
+            print(f"\nПост: {post.title}")
+            if post.comments:
+                for comment in post.comments:
+                    print(f"  - {comment.author_name}: {comment.text}")
+            else:
+                print("  Нет комментариев.")
+
+if __name__ == "__main__":
+    main()

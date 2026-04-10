@@ -1,0 +1,82 @@
+from flask import Flask, request, render_template_string, redirect, url_for
+import os
+
+app = Flask(__name__)
+
+# Путь к файлу с результатами
+RESULTS_FILE = 'survey_results.txt'
+
+# HTML-шаблон страницы опроса (внутри Python-кода для простоты)
+SURVEY_HTML = """
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Опрос по качеству сайта</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { background: white; padding: 30px 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
+        label { display: block; margin-bottom: 15px; font-weight: bold; }
+        input[type="radio"] { margin-right: 10px; vertical-align: middle; }
+        .btn { display: block; width: 100%; padding: 12px; background-color: #3498db; color: white; border-radius: 8px; border: none; font-size: 16px; cursor: pointer; margin-top: 25px; }
+        .btn:hover { background-color: #2980b9; }
+        .success { text-align: center; color: #27ae60; font-size: 18px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+{% if success %}
+<p class="success">Спасибо за ваш отзыв!</p>
+{% else %}
+<h1>Оцените наш сайт</h1>
+<form method="POST">
+    
+    <label for="rate">Как вы оцениваете удобство сайта?</label><br>
+    <label><input type="radio" id="rate" name="rate" value="Отлично" required> Отлично</label><br>
+    <label><input type="radio" id="rate" name="rate" value="Хорошо"> Хорошо</label><br>
+    <label><input type="radio" id="rate" name="rate" value="Удовлетворительно"> Удовлетворительно</label><br>
+    
+    <label forsuggestion">Что можно улучшить?</label><br>
+    <textarea namesuggestion" rows=4 style='width:100%; padding:10px; border-radius:6px; border:1px solid #ccc;' placeholder='Ваше предложение...'></textarea><br>
+    
+    <button typesubmit" classbtn">Отправить отзыв</button>
+</form>
+{% endif %}
+</div>
+</body>
+</html>
+"""
+
+def save_result(data):
+    """Сохраняет результат опроса в файл."""
+    with open(RESULTS_FILE, 'a', encoding='utf-8') as f:
+        f.write(f"{data['rate']} | {data['suggestion']}\n")
+
+@app.route('/', methods=['GET', 'POST'])
+def survey():
+    if request.method == 'POST':
+        # Получаем данные из формы
+        rate = request.form.get('rate')
+        suggestion = request.form.get('suggestion', '').strip()
+        
+        # Если поле предложения пустое, пишем 'Нет ответа'
+        if not suggestion:
+            suggestion = 'Нет ответа'
+        
+        # Сохраняем результат
+        save_result({'rate': rate, 'suggestion': suggestion})
+        
+        # Показываем страницу с благодарностью
+        return render_template_string(SURVEY_HTML, success=True)
+    
+    # Показываем форму опроса при GET-запросе
+    return render_template_string(SURVEY_HTML)
+
+if __name__ == '__main__':
+    # Убеждаемся, что файл для результатов существует
+    if not os.path.exists(RESULTS_FILE):
+        open(RESULTS_FILE, 'w').close()
+    
+    print("Опрос запущен. Откройте http://127.0.0.1:5000/ в браузере.")
+    app.run(debug=True)

@@ -160,3 +160,96 @@ header {
 .hero-card { border-radius:.8rem!important;}
 .hero-img { height:-webkit-fill-available!important;}
 .empty-message { padding-top:-48px!important;}
+
+
+// -------- БАЗА ДАННЫХ ГЕРОЕВ ----------
+const heroesData = [
+    { name: "Pudge", id: "pudge", attribute: "Сила", difficulty: "Средний" },
+    // ... (остальные герои)
+];
+
+const IMG_BASE_URL = "https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/";
+const IMG_SUFFIX = "_full.png";
+
+// Элементы DOM
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearSearchBtn');
+const randomBtn = document.getElementById('randomHeroBtn');
+const heroesContainer = document.getElementById('heroesGridContainer');
+const countSpan = document.getElementById('countValue');
+
+let currentFilter = "";
+
+// Функция рендеринга карточек
+function renderHeroes(filterText = "") {
+    const lowerFilter = filterText.toLowerCase().trim();
+    let filteredHeroes = heroesData.filter(hero =>
+        hero.name.toLowerCase().includes(lowerFilter)
+    );
+
+    countSpan.textContent = filteredHeroes.length;
+
+    if (filteredHeroes.length === 0) {
+        heroesContainer.innerHTML = `<div class="empty-message"><i class="fas fa-frown"></i> Героев не найдено... Попробуйте изменить запрос</div>`;
+        return;
+    }
+
+    let cardsHTML = "";
+    for (let hero of filteredHeroes) {
+        const imageUrl = `${IMG_BASE_URL}${hero.id}${IMG_SUFFIX}`;
+        const fallbackImg = `${IMG_BASE_URL}${hero.id}_vert.jpg`;
+        
+        cardsHTML += `
+            <div class="hero-card" data-hero-name="${hero.name}">
+                <img class="hero-img" src="${imageUrl}" alt="${hero.name}" 
+                     onerror="this.onerror=null; this.src='${fallbackImg}'; this.style.objectFit='contain'; this.style.background='#0f141c';">
+                <div class="hero-info">
+                    <div class="hero-name">${hero.name}</div>
+                    <div>
+                        <span class="hero-attr"><i class="fas fa-bolt"></i> ${hero.attribute}</span>
+                        <span class="hero-difficulty"><i class="fas fa-chart-line"></i> ${hero.difficulty}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    heroesContainer.innerHTML = cardsHTML;
+}
+
+// Обработчики событий
+function handleSearch() {
+    currentFilter = searchInput.value;
+    renderHeroes(currentFilter);
+}
+function clearSearch() {
+    searchInput.value = "";
+    currentFilter = "";
+    renderHeroes("");
+    searchInput.focus();
+}
+function randomHero() {
+     let sourceArray = currentFilter ? heroesData.filter(h => h.name.toLowerCase().includes(currentFilter.toLowerCase())) : heroesData;
+     if (sourceArray.length === 0) return alert("Сначала найдите хотя бы одного героя!");
+     const randomIndex = Math.floor(Math.random() * sourceArray.length);
+     const chosen = sourceArray[randomIndex];
+     alert(`✨ Случайный герой: ${chosen.name} ✨\n🎭 Атрибут: ${chosen.attribute}\n📈 Сложность: ${chosen.difficulty}`);
+     searchInput.value = chosen.name;
+     handleSearch();
+}
+function setupCardClickDelegation() {
+     heroesContainer.addEventListener('click', (e) => {
+         const card = e.target.closest('.hero-card');
+         if (!card) return;
+         const heroName = card.getAttribute('data-hero-name');
+         alert(`Вы выбрали героя: ${heroName}`);
+     });
+}
+
+// Инициализация при загрузке страницы
+renderHeroes(); // Показать всех героев сразу
+setupCardClickDelegation();
+
+// Подписка на события
+searchInput.addEventListener('input', handleSearch);
+clearBtn.addEventListener('click', clearSearch);
+randomBtn.addEventListener('click', randomHero);

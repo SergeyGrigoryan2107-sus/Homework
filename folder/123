@@ -1,1 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dota 2 — Арена героев</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* CSS код будет здесь */
+    </style>
+</head>
+<body>
 
+<header>
+    <div class="container header-inner">
+        <div class="logo">
+            <i class="fas fa-skull"></i>
+            <span>Serwer 2rbina2rista</span>
+        </div>
+        <div class="nav-links">
+            <a href="#">Арена</a>
+            <a href="#heroes">Герои</a>
+            <a href="#">Сообщество</a>
+            <a href="#">Киберспорт</a>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="container">
+        <!-- Блок "Герой" (Hero Section) -->
+        <div class="hero">
+            <h1>Битва древних</h1>
+            <p>выбери сервер поиграть</p>
+            <div class="hero-quote">
+                <i class="fas fa-quote-left" style="margin-right: 8px; color:#e34d3a;"></i> 
+                2RBAAINA2RISTA-Франкенштейн
+            </div>
+        </div>
+
+        <!-- Панель поиска -->
+        <div class="search-panel">
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Найти героя по названию... (Pudge, Invoker, Axe...)" autocomplete="off">
+            </div>
+            <div class="action-buttons">
+                <button class="btn-icon" id="clearSearchBtn"><i class="fas fa-times-circle"></i> <span>Сброс</span></button>
+                <button class="btn-icon" id="randomHeroBtn"><i class="fas fa-dice-d6"></i> <span>Случайный герой</span></button>
+            </div>
+            <div class="hero-counter" id="heroCounter">
+                <i class="fas fa-users"></i> <span id="countValue">0</span> героев
+            </div>
+        </div>
+
+        <!-- Секция с героями -->
+        <section class="heroes-section" id="heroes">
+            <h2 class="section-title"><i class="fas fa-helmet-battle"></i> Воины Древних</h2>
+            <div id="heroesGridContainer" class="heroes-grid">
+                <!-- Карточки героев будут вставлены здесь с помощью JavaScript -->
+                <div class="empty-message">Загрузка героев...</div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer>
+    <div class="container">
+        <p>© 2025 Dota 2 Fan Hub. Все материалы принадлежат Valve Corporation. Неофициальный сайт, созданный в честь легендарной игры.</p>
+        <p style="margin-top: 10px;"><i class="fab fa-steam"></i> Присоединяйся к битве на <a href="#"> официальном сайте</a></p>
+    </div>
+</footer>
+
+<script>
+    /* JavaScript код будет здесь */
+</script>
+</body>
+</html>

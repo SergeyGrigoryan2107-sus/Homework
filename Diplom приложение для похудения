@@ -1,0 +1,37 @@
+lib/main.dart
+``dart import 'package:flutter/material.dart'; import 'home_page.dart';
+
+void main() { runApp(WeightLossApp()); }
+
+class WeightLossApp extends StatelessWidget { @override Widget build(BuildContext context) { return MaterialApp( title: 'Weight Loss Tracker', theme: ThemeData(primarySwatch: Colors.green), home: HomePage(), ); } }
+
+
+#### **lib/home_page.dart**
+dart import 'package:flutter/material.dart'; import 'food_log_page.dart'; class HomePage extends StatefulWidget { @override _HomePageState createState() => _HomePageState(); } class _HomePageState extends State<HomePage> { double currentWeight = 70; // Текущий вес double goalWeight = 65; // Целевой вес void updateWeight(double newWeight) { setState(() { currentWeight = newWeight; }); } @override Widget build(BuildContext context) { return Scaffold( appBar: AppBar( title: Text('Weight Loss Tracker'), actions: [ IconButton( icon: Icon(Icons.fastfood), onPressed: () { Navigator.push( context, MaterialPageRoute(builder: (context) => FoodLogPage()), ); }, ), ], ), body: Padding( padding: const EdgeInsets.all(16.0), child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ Text('Текущий вес: ${currentWeight} kg'), SizedBox(height: 20), Text('Целевой вес: ${goalWeight} kg'), SizedBox(height: 20), ElevatedButton( onPressed: () { updateWeight(currentWeight - 1); // Снижаем для примера }, child: Text('Сбросить 1 кг'), ), SizedBox(height: 20), LinearProgressIndicator( value: (currentWeight - goalWeight) / (70 - goalWeight), minHeight: 10, ), SizedBox(height: 20), Text('Вы на пути к своей цели!'), ], ), ), ); } }
+
+#### **lib/food_log_page.dart**
+dart import 'package:flutter/material.dart'; import 'package:http/http.dart' as http; import 'dart:convert'; class FoodLogPage extends StatelessWidget { final TextEditingController foodController = TextEditingController(); Future<void> logFood(String food) async { var response = await http.post( Uri.parse('http://<your-ip>:<port>/api/log'), // Укажите ваш сервер headers: <String, String>{ 'Content-Type': 'application/json; charset=UTF-8', }, body: jsonEncode(<String, String>{ 'food': food, }), ); if (response.statusCode == 201) { // Успешно добавлено } else { throw Exception('Ошибка при добавлении пищи'); } } @override Widget build(BuildContext context) { return Scaffold( appBar: AppBar(title: Text('Food Log')), body: Padding( padding: const EdgeInsets.all(16.0), child: Column( children: [ TextField( controller: foodController, decoration: InputDecoration(labelText: 'Введите пищу'), ), ElevatedButton( onPressed: () { logFood(foodController.text); }, child: Text('Добавить'), ), ], ), ), ); } }
+
+### 2. Файл pubspec.yaml
+
+Не забудьте добавить зависимости для HTTP:
+yaml name: weight_loss_app description: A Flutter application for tracking weight loss. environment: sdk: ">=2.12.0 <3.0.0" dependencies: flutter: sdk: flutter http: ^0.13.3 flutter: uses-material-design: true
+
+### 3. README.md
+
+Создайте файл README.md для описания вашего проекта:
+markdown # Weight Loss Tracker A simple Flutter application for tracking weight loss goals. ## Features - Track your current weight and weight loss goal. - Log food intake. - Monitor progress with a linear progress indicator. ## Installation 1. Clone the repository: `bash git clone https://github.com/your-username/weight_loss_app.git cd weight_loss_app
+
+2. Install dependencies:
+bash flutter pub get
+
+3. Run the application:
+bash flutter run
+
+## Backend
+
+Optionally, you can create a backend using Flask to store food logs. See api.py file in the backend folder (if you create one) for the API structure.
+
+## License
+
+This project is licensed under the MIT License.
